@@ -1,0 +1,113 @@
+'use client'
+
+import { X, MonitorDot, Blocks } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { useRouter } from 'next/navigation'
+
+interface UIModeDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function UIModeDialog({ open, onOpenChange }: UIModeDialogProps) {
+  const router = useRouter()
+
+  const handleModeSelect = (mode: 'phase-base' | 'free-ui') => {
+    onOpenChange(false)
+    router.push(`/manual-entry/${mode}`)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-2xl font-semibold">Choose Your UI Mode</DialogTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 rounded-md"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </div>
+          <p className="text-gray-600 mt-2">
+            Select how you would like to enter your data manually.
+          </p>
+        </DialogHeader>
+
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
+          <button
+            onClick={() => handleModeSelect('phase-base')}
+            className="group relative flex flex-col items-center text-left border rounded-lg p-6 hover:border-teal-600 hover:shadow-lg transition-all"
+          >
+            <div className="h-12 w-12 bg-teal-50 rounded-lg flex items-center justify-center mb-4">
+              <Blocks className="h-6 w-6 text-teal-600" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2 group-hover:text-teal-600">Phase Base</h3>
+            <p className="text-gray-600 mb-6">
+              Enter data in a structured, phase-by-phase approach.
+            </p>
+            <ul className="space-y-3 w-full">
+              <li className="flex items-center text-gray-600">
+                <svg className="h-5 w-5 text-teal-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Step-by-step guidance
+              </li>
+              <li className="flex items-center text-gray-600">
+                <svg className="h-5 w-5 text-teal-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Organized workflow
+              </li>
+              <li className="flex items-center text-gray-600">
+                <svg className="h-5 w-5 text-teal-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Clear progress tracking
+              </li>
+            </ul>
+          </button>
+
+          <button
+            onClick={() => handleModeSelect('free-ui')}
+            className="group relative flex flex-col items-center text-left border rounded-lg p-6 hover:border-teal-600 hover:shadow-lg transition-all"
+          >
+            <div className="h-12 w-12 bg-teal-50 rounded-lg flex items-center justify-center mb-4">
+              <MonitorDot className="h-6 w-6 text-teal-600" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2 group-hover:text-teal-600">Free UI</h3>
+            <p className="text-gray-600 mb-6">
+              Flexible data entry with complete freedom of navigation.
+            </p>
+            <ul className="space-y-3 w-full">
+              <li className="flex items-center text-gray-600">
+                <svg className="h-5 w-5 text-teal-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Unrestricted navigation
+              </li>
+              <li className="flex items-center text-gray-600">
+                <svg className="h-5 w-5 text-teal-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Custom workflow
+              </li>
+              <li className="flex items-center text-gray-600">
+                <svg className="h-5 w-5 text-teal-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Quick data entry
+              </li>
+            </ul>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
