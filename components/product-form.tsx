@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Upload, Package2, Info, ChevronDown, ChevronUp, Plus, HelpCircle, MapPin, Factory, Trash2, FileText, BarChart3, Settings, FileCheck } from 'lucide-react'
+import { Upload, Package2, Info, ChevronDown, ChevronUp, Plus, HelpCircle, MapPin, Factory, Trash2, Zap, Brain, FileCheck, Settings } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -394,29 +394,18 @@ export function ProductForm() {
       <Dialog open={showNextSteps} onOpenChange={setShowNextSteps}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center">What would you like to do next?</DialogTitle>
+            <DialogTitle className="text-center">Choose Your LCA Method</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 pt-4">
             <Button
               variant="outline"
               className="w-full justify-start gap-2 h-14"
-              onClick={() => handleNextStepClick('/product-portfolio')}
-            >
-              <FileText className="h-5 w-5 text-teal-600" />
-              <div className="text-left">
-                <div className="font-semibold">Product Portfolio</div>
-                <div className="text-sm text-gray-500">View and manage your products</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 h-14"
               onClick={() => handleNextStepClick('/fast-lca')}
             >
-              <BarChart3 className="h-5 w-5 text-teal-600" />
+              <Zap className="h-5 w-5 text-teal-600" />
               <div className="text-left">
                 <div className="font-semibold">Fast LCA</div>
-                <div className="text-sm text-gray-500">Quick lifecycle assessment</div>
+                <div className="text-sm text-gray-500">Quick assessment with basic inputs</div>
               </div>
             </Button>
             <Button
@@ -424,21 +413,32 @@ export function ProductForm() {
               className="w-full justify-start gap-2 h-14"
               onClick={() => handleNextStepClick('/intelligent-lca')}
             >
-              <Settings className="h-5 w-5 text-teal-600" />
+              <Brain className="h-5 w-5 text-teal-600" />
               <div className="text-left">
                 <div className="font-semibold">Intelligent LCA</div>
-                <div className="text-sm text-gray-500">Detailed lifecycle assessment</div>
+                <div className="text-sm text-gray-500">AI-powered detailed assessment</div>
               </div>
             </Button>
             <Button
               variant="outline"
               className="w-full justify-start gap-2 h-14"
-              onClick={() => handleNextStepClick('/epd-preview')}
+              onClick={() => handleNextStepClick('/input-data')}
             >
               <FileCheck className="h-5 w-5 text-teal-600" />
               <div className="text-left">
-                <div className="font-semibold">EPD Preview</div>
-                <div className="text-sm text-gray-500">Preview your EPD document</div>
+                <div className="font-semibold">EPD Builder</div>
+                <div className="text-sm text-gray-500">Create and manage EPD documents</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 h-14"
+              onClick={() => handleNextStepClick('/optimizer-lca')}
+            >
+              <Settings className="h-5 w-5 text-teal-600" />
+              <div className="text-left">
+                <div className="font-semibold">Optimizer LCA</div>
+                <div className="text-sm text-gray-500">Optimize your product's environmental impact</div>
               </div>
             </Button>
           </div>
