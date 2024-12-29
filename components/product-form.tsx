@@ -138,7 +138,7 @@ export function ProductForm() {
 
             <div className="mt-4 space-y-4">
               {materials.map((material) => (
-                <div key={material.id} className="grid sm:grid-cols-[1fr_auto_auto_auto] gap-4 items-end">
+                <div key={material.id} className="grid sm:grid-cols-4 items-end gap-4">
                   <div>
                     <label className="text-sm text-gray-600 mb-1 block font-semibold">Material Name*</label>
                     <Input
@@ -170,14 +170,16 @@ export function ProductForm() {
                       </Select>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeMaterial(material.id)}
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-end">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeMaterial(material.id)}
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 h-10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
