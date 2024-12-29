@@ -8,7 +8,7 @@ export function Sidebar() {
     <>
       {/* Mobile Menu Trigger */}
       <Sheet>
-        <SheetTrigger asChild className="fixed top-4 left-4 md:hidden">
+        <SheetTrigger asChild className="fixed top-4 right-4 md:hidden">
           <Button variant="ghost" size="icon">
             <Menu className="h-6 w-6" />
             <span className="sr-only">Toggle Menu</span>

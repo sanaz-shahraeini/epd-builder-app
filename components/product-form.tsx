@@ -276,7 +276,7 @@ export function ProductForm() {
             <Map />
           </div>
 
-          <div className="flex justify-center">
+          <div className="hidden lg:flex justify-center">
             <Button 
               size="lg" 
               className="px-8 bg-teal-600 hover:bg-teal-700 text-white" 
@@ -376,7 +376,16 @@ export function ProductForm() {
           </div>
         </Card>
       </div>
+
+      <div className="lg:hidden flex justify-center mt-6">
+        <Button 
+          size="lg" 
+          className="px-8 bg-teal-600 hover:bg-teal-700 text-white" 
+          onClick={handleCreateProduct}
+        >
+          Create Product
+        </Button>
+      </div>
     </div>
   )
 }
-
