@@ -4,6 +4,7 @@ import { X, MonitorDot, Blocks } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
+import { toast } from "sonner"
 
 interface UIModeDialogProps {
   open: boolean
@@ -14,6 +15,12 @@ export function UIModeDialog({ open, onOpenChange }: UIModeDialogProps) {
   const router = useRouter()
 
   const handleModeSelect = (mode: 'phase-base' | 'free-ui') => {
+    if (mode === 'phase-base') {
+      toast.info("Phase Base UI is coming soon!", {
+        description: "This feature is currently under development.",
+      })
+      return
+    }
     onOpenChange(false)
     router.push(`/manual-entry/${mode}`)
   }
@@ -44,6 +51,9 @@ export function UIModeDialog({ open, onOpenChange }: UIModeDialogProps) {
             onClick={() => handleModeSelect('phase-base')}
             className="group relative flex flex-col items-center text-left border rounded-lg p-6 hover:border-teal-600 hover:shadow-lg transition-all"
           >
+            <div className="absolute top-4 right-4 bg-teal-100 text-teal-700 text-xs font-medium px-2.5 py-1 rounded">
+              Coming Soon
+            </div>
             <div className="h-12 w-12 bg-teal-50 rounded-lg flex items-center justify-center mb-4">
               <Blocks className="h-6 w-6 text-teal-600" />
             </div>
@@ -110,4 +120,3 @@ export function UIModeDialog({ open, onOpenChange }: UIModeDialogProps) {
     </Dialog>
   )
 }
-
