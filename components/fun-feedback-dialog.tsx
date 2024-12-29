@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Sparkles, MessageCircle, Heart } from 'lucide-react'
 import Confetti from 'react-confetti'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface FunFeedbackDialogProps {
   open: boolean
@@ -13,18 +13,40 @@ interface FunFeedbackDialogProps {
 }
 
 export function FunFeedbackDialog({ open, onOpenChange, onAction }: FunFeedbackDialogProps) {
-  const [showConfetti, setShowConfetti] = useState(true)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 })
+
+  useEffect(() => {
+    if (open) {
+      setShowConfetti(true)
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      })
+    }
+  }, [open])
+
+  useEffect(() => {
+    const handleResize = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      })
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        {showConfetti && (
+        {showConfetti && dimensions.width > 0 && (
           <Confetti
-            width={window.innerWidth}
-            height={window.innerHeight}
-            recycle={false}
+            width={dimensions.width}
+            height={dimensions.height}
+            recycle={true}
             numberOfPieces={200}
-            onConfettiComplete={() => setShowConfetti(false)}
           />
         )}
         <div className="flex flex-col items-center text-center p-4">
