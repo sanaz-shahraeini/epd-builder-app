@@ -6,12 +6,12 @@ import { SectionTitle } from './section-title'
 
 export function RightSidebar() {
   return (
-    <div className="w-full lg:w-80 space-y-6">
-      <Card className="p-4">
+    <div className="w-full lg:w-80 space-y-4">
+      <Card className="p-6">
         <SectionTitle className="mb-4">
           Tips & Guidelines
         </SectionTitle>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex gap-2">
             <div className="flex-shrink-0">
               <span className="inline-block p-1 rounded-full bg-teal-50">

@@ -232,7 +232,7 @@ export default function FreeUIPage() {
             </div>
 
             {/* Right Sidebar */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               <Card className="p-6 w-full lg:w-80">
               <SectionTitle className="mb-4">
                   Upload Files

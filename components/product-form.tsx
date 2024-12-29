@@ -268,11 +268,11 @@ export function ProductForm() {
             />
             <Textarea 
               placeholder="Enter product description"
-              className="min-h-[200px]"
+              className="h-[150px]"
             />
           </section>
 
-          <div className="h-[400px] rounded-lg overflow-hidden">
+          <div className="h-[200px] rounded-lg overflow-hidden">
             <Map />
           </div>
 

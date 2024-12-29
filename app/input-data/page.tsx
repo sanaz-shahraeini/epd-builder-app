@@ -8,7 +8,7 @@ import { Sidebar } from "@/components/sidebar"
 import { UIModeDialog } from "@/components/ui-mode-dialog"
 import { RightSidebar } from "@/components/right-sidebar"
 import { useRouter } from 'next/navigation'
-import { SectionTitle } from '@/components/section-title'
+
 
 export default function InputDataPage() {
   const router = useRouter()
@@ -18,7 +18,7 @@ export default function InputDataPage() {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <main className="flex-1 md:ml-64">
-        <div className="max-w-7xl mx-auto p-4 md:p-6">
+        <div className="max-w-7xl mx-auto p-2 md:p-6">
           <h1 className="text-2xl font-semibold text-gray-900 mb-8">Input Your Data</h1>
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Main Content */}
@@ -110,7 +110,7 @@ export default function InputDataPage() {
                   className="flex items-center gap-2 text-gray-600 hover:text-teal-600 hover:border-teal-600 transition-colors px-8 py-2.5"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  <span className="font-medium">Back to Projects</span>
+                  <span className="font-medium">Back</span>
                 </Button>
               </div>
             </div>

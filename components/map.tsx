@@ -17,6 +17,6 @@ export default function Map() {
     }
   }, [])
 
-  return <div id="map" className="h-full w-full" />
+  return <div id="map" className="h-60 w-full" />
 }
 
