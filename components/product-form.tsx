@@ -7,7 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Upload, Package2, Info, ChevronDown, ChevronUp, Plus, HelpCircle, MapPin, Factory, Trash2 } from 'lucide-react'
+import { Upload, Package2, Info, ChevronDown, ChevronUp, Plus, HelpCircle, MapPin, Factory, Trash2, FileText, BarChart3, Settings, FileCheck } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import dynamic from "next/dynamic"
 import { useRouter } from 'next/navigation'
 import { SectionHeader } from './section-header'
@@ -27,6 +33,7 @@ export function ProductForm() {
   const [files, setFiles] = useState<{ image?: File; document?: File }>({})
   const [isWeightSummaryOpen, setIsWeightSummaryOpen] = useState(false)
   const [materials, setMaterials] = useState<Material[]>([])
+  const [showNextSteps, setShowNextSteps] = useState(false)
 
   const handleFileUpload = (type: 'image' | 'document') => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -36,7 +43,12 @@ export function ProductForm() {
   }
 
   const handleCreateProduct = () => {
-    router.push('/input-data')
+    setShowNextSteps(true)
+  }
+
+  const handleNextStepClick = (path: string) => {
+    setShowNextSteps(false)
+    router.push(path)
   }
 
   const handleBrowseClick = (inputId: string) => {
@@ -278,7 +290,7 @@ export function ProductForm() {
             <Map />
           </div>
 
-          <div className="hidden lg:flex justify-center">
+          <div className="flex justify-center">
             <Button 
               size="lg" 
               className="px-8 bg-teal-600 hover:bg-teal-700 text-white" 
@@ -379,15 +391,59 @@ export function ProductForm() {
         </Card>
       </div>
 
-      <div className="lg:hidden flex justify-center mt-6">
-        <Button 
-          size="lg" 
-          className="px-8 bg-teal-600 hover:bg-teal-700 text-white" 
-          onClick={handleCreateProduct}
-        >
-          Create Product
-        </Button>
-      </div>
+      <Dialog open={showNextSteps} onOpenChange={setShowNextSteps}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center">What would you like to do next?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-4">
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 h-14"
+              onClick={() => handleNextStepClick('/product-portfolio')}
+            >
+              <FileText className="h-5 w-5 text-teal-600" />
+              <div className="text-left">
+                <div className="font-semibold">Product Portfolio</div>
+                <div className="text-sm text-gray-500">View and manage your products</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 h-14"
+              onClick={() => handleNextStepClick('/fast-lca')}
+            >
+              <BarChart3 className="h-5 w-5 text-teal-600" />
+              <div className="text-left">
+                <div className="font-semibold">Fast LCA</div>
+                <div className="text-sm text-gray-500">Quick lifecycle assessment</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 h-14"
+              onClick={() => handleNextStepClick('/intelligent-lca')}
+            >
+              <Settings className="h-5 w-5 text-teal-600" />
+              <div className="text-left">
+                <div className="font-semibold">Intelligent LCA</div>
+                <div className="text-sm text-gray-500">Detailed lifecycle assessment</div>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2 h-14"
+              onClick={() => handleNextStepClick('/epd-preview')}
+            >
+              <FileCheck className="h-5 w-5 text-teal-600" />
+              <div className="text-left">
+                <div className="font-semibold">EPD Preview</div>
+                <div className="text-sm text-gray-500">Preview your EPD document</div>
+              </div>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
