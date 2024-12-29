@@ -8,11 +8,22 @@ import { Sidebar } from "@/components/sidebar"
 import { UIModeDialog } from "@/components/ui-mode-dialog"
 import { RightSidebar } from "@/components/right-sidebar"
 import { useRouter } from 'next/navigation'
+import { FunFeedbackDialog } from '@/components/fun-feedback-dialog'
 
 
 export default function InputDataPage() {
   const router = useRouter()
   const [isUIModeDialogOpen, setIsUIModeDialogOpen] = useState(false)
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false)
+
+  const handleExcelUpload = () => {
+    setIsFeedbackDialogOpen(true)
+  }
+
+  const handleFeedbackAction = (action: 'later' | 'share') => {
+    setIsFeedbackDialogOpen(false)
+    router.push('/excel-upload')
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -59,7 +70,7 @@ export default function InputDataPage() {
                   </ul>
                   <Button 
                     className="w-full bg-teal-600 hover:bg-teal-700 text-white" 
-                    onClick={() => router.push('/excel-upload')}
+                    onClick={handleExcelUpload}
                   >
                     Choose Excel Upload
                   </Button>
@@ -124,6 +135,12 @@ export default function InputDataPage() {
       <UIModeDialog 
         open={isUIModeDialogOpen} 
         onOpenChange={setIsUIModeDialogOpen}
+      />
+      
+      <FunFeedbackDialog
+        open={isFeedbackDialogOpen}
+        onOpenChange={setIsFeedbackDialogOpen}
+        onAction={handleFeedbackAction}
       />
     </div>
   )
