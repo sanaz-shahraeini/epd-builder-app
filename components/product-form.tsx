@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Upload, Package2, Info, ChevronDown, ChevronUp, Plus, HelpCircle, MapPin, Factory, Trash2, Zap, Brain, FileCheck, Settings } from 'lucide-react'
+import { ModeToggle } from "@/components/mode-toggle"
 import {
   Dialog,
   DialogContent,
@@ -82,7 +83,12 @@ export function ProductForm() {
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       <div className="flex-1">
-        <h1 className="text-2xl font-semibold mb-8">Create New Product</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-semibold">Create New Product</h1>
+          <div className="lg:hidden">
+            <ModeToggle />
+          </div>
+        </div>
 
         <div className="space-y-8">
           <section>
@@ -93,11 +99,11 @@ export function ProductForm() {
             />
             <div className="grid sm:grid-cols-2 gap-6">
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 font-semibold">Product Name*</label>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Product Name*</label>
                 <Input placeholder="Enter product name" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 font-semibold">Project Name*</label>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Project Name*</label>
                 <Select>
                   <SelectTrigger>
                     <SelectValue placeholder="Select project" />
@@ -109,13 +115,15 @@ export function ProductForm() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 font-semibold">Weight*</label>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Weight*</label>
                 <div className="flex gap-2">
+               
                   <Input placeholder="Enter weight" />
                   <Select defaultValue="kg">
                     <SelectTrigger className="w-24">
                       <SelectValue placeholder="Unit" />
                     </SelectTrigger>
+                    
                     <SelectContent>
                       <SelectItem value="kg">kg</SelectItem>
                       <SelectItem value="g">g</SelectItem>
@@ -124,7 +132,7 @@ export function ProductForm() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 font-semibold">Dimension (optional)</label>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Dimension (optional)</label>
                 <Input placeholder="1x1x1 cm" />
               </div>
             </div>
@@ -152,7 +160,7 @@ export function ProductForm() {
               {materials.map((material) => (
                 <div key={material.id} className="grid sm:grid-cols-4 items-end gap-4">
                   <div>
-                    <label className="text-sm text-gray-600 mb-1 block font-semibold">Material Name*</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block font-semibold">Material Name*</label>
                     <Input
                       placeholder="Enter material name"
                       value={material.name}
@@ -160,7 +168,7 @@ export function ProductForm() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600 mb-1 block font-semibold">Quantity*</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block font-semibold">Quantity*</label>
                     <div className="flex gap-2">
                       <Input
                         type="number"
@@ -243,7 +251,7 @@ export function ProductForm() {
             />
             <div className="grid sm:grid-cols-2 gap-6">
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 font-semibold">Supplier Country*</label>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Supplier Country*</label>
                 <Select>
                   <SelectTrigger>
                     <SelectValue placeholder="Select country" />
@@ -255,7 +263,7 @@ export function ProductForm() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 font-semibold">Product Lifetime*</label>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Product Lifetime*</label>
                 <div className="flex gap-2">
                   <Input placeholder="Enter lifetime" />
                   <Select defaultValue="year">
@@ -302,97 +310,104 @@ export function ProductForm() {
         </div>
       </div>
 
-      <div className="w-full lg:w-80 space-y-6">
-        <Card className="p-6">
-        <SectionTitle className="mb-4">
-        Product Image
-        </SectionTitle>
-          <div
-            className="border-2 border-dashed rounded-lg p-6 text-center"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault()
-              const file = e.dataTransfer.files[0]
-              if (file) setFiles(prev => ({ ...prev, image: file }))
-            }}
-          >
-            <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm text-gray-500 mb-2">
-              Drag and drop your product image here
-            </p>
-            <button
-              onClick={() => handleBrowseClick('image-upload')}
-              className="text-sm text-teal-600 hover:text-teal-700"
+      <div className="w-full lg:w-80">
+        <div className="hidden lg:flex justify-end mb-6">
+          <ModeToggle />
+        </div>
+        <div className="space-y-6">
+          <Card className="p-6">
+          <SectionTitle className="mb-4">
+          Product Image
+          </SectionTitle>
+            <div
+              className="border-2 border-dashed rounded-lg p-6 text-center"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                const file = e.dataTransfer.files[0]
+                if (file) setFiles(prev => ({ ...prev, image: file }))
+              }}
             >
-              or browse to choose a file
-            </button>
-            <input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileUpload('image')}
-            />
-          </div>
-        </Card>
-
-        <Card className="p-6 w-full lg:w-80">
-        <SectionTitle className="mb-4">
-        Product Document
-        </SectionTitle>
-         
-          <div
-            className="border-2 border-dashed rounded-lg p-6 text-center"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault()
-              const file = e.dataTransfer.files[0]
-              if (file) setFiles(prev => ({ ...prev, document: file }))
-            }}
-          >
-            <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm text-gray-500 mb-2">
-              Drag and drop your document here
-            </p>
-            <button
-              onClick={() => handleBrowseClick('document-upload')}
-              className="text-sm text-teal-600 hover:text-teal-700"
-            >
-              or browse to choose a file
-            </button>
-            <input
-              id="document-upload"
-              type="file"
-              accept=".pdf,.doc,.docx"
-              className="hidden"
-              onChange={handleFileUpload('document')}
-            />
-          </div>
-        </Card>
-
-        <Card className="p-6 w-full lg:w-80">
-          <div className="flex items-start gap-4">
-          <HelpCircle className="w-5 h-5 text-teal-600 flex-shrink-0 mt-1" />
-            <div>
-            <SectionTitle className="mb-4">
-        Need Help?
-        </SectionTitle>
-              <p className="text-sm text-gray-500 mb-4">
-                Our support team is here to assist you with any questions about the EPD creation process.
+              <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-500 mb-2">
+                Drag and drop your product image here
               </p>
-              <Button 
-                variant="outline" 
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+              <button
+                onClick={() => handleBrowseClick('image-upload')}
+                className="text-sm text-teal-600 hover:text-teal-700"
               >
-                Ask Questions
-              </Button>
+                or browse to choose a file
+              </button>
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileUpload('image')}
+              />
             </div>
-          </div>
-        </Card>
+          </Card>
+
+          <Card className="p-6 w-full lg:w-80">
+          <SectionTitle className="mb-4">
+          Product Document
+          </SectionTitle>
+           
+            <div
+              className="border-2 border-dashed rounded-lg p-6 text-center"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                const file = e.dataTransfer.files[0]
+                if (file) setFiles(prev => ({ ...prev, document: file }))
+              }}
+            >
+              <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-500 mb-2">
+                Drag and drop your document here
+              </p>
+              <button
+                onClick={() => handleBrowseClick('document-upload')}
+                className="text-sm text-teal-600 hover:text-teal-700"
+              >
+                or browse to choose a file
+              </button>
+              <input
+                id="document-upload"
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                onChange={handleFileUpload('document')}
+              />
+            </div>
+          </Card>
+
+          <Card className="p-6 w-full lg:w-80">
+            <div className="flex items-start gap-4">
+            <HelpCircle className="w-5 h-5 text-teal-600 flex-shrink-0 mt-1" />
+              <div>
+              <SectionTitle className="mb-4">
+          Need Help?
+          </SectionTitle>
+                <p className="text-sm text-gray-500 mb-4">
+                  Our support team is here to assist you with any questions about the EPD creation process.
+                </p>
+                <Button 
+                  variant="outline" 
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                >
+                  Ask Questions
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
       </div>
 
       <Dialog open={showNextSteps} onOpenChange={setShowNextSteps}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent 
+          className="sm:max-w-md fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full max-w-md"
+        >
           <DialogHeader>
             <DialogTitle className="text-center">Choose Your LCA Method</DialogTitle>
           </DialogHeader>
@@ -443,6 +458,9 @@ export function ProductForm() {
             </Button>
           </div>
         </DialogContent>
+        {showNextSteps && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[9998]"></div>
+        )}
       </Dialog>
     </div>
   )

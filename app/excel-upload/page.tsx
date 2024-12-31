@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Sidebar } from "@/components/sidebar"
 import Link from 'next/link'
+import { ModeToggle } from '@/components/mode-toggle'
+import { ChevronLeft } from 'lucide-react'
 
 export default function ExcelUploadPage() {
   const [files, setFiles] = useState<{ component?: File; material?: File }>({})
@@ -30,38 +32,44 @@ export default function ExcelUploadPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-black">
       <Sidebar />
       <main className="flex-1 md:ml-64">
         <div className="max-w-7xl mx-auto p-4 md:p-8">
+          <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.history.back()}
+                className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-50 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-full w-9 h-9 flex items-center justify-center transition-colors"
+              >
+                <ChevronLeft className="h-5 w-5" />
+                <span className="sr-only">Go back</span>
+              </Button>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Input Your Data</h1>
+            </div>
+            <ModeToggle />
+          </div>
+
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Main Content */}
             <div className="flex-1">
               <div className="mb-8">
-                <Button
-                  variant="ghost"
-                  className="mb-4 text-gray-600 hover:text-gray-900"
-                  asChild
-                >
-                  <Link href="/input-data">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Selection
-                  </Link>
-                </Button>
-                <h1 className="text-2xl font-semibold mb-2">Input Your Data</h1>
-                <p className="text-gray-600">
+             
+                <p className="text-gray-600 dark:text-gray-300">
                   Choose your preferred method to input data and upload Excel files if needed.
                 </p>
               </div>
 
               <div className="space-y-8">
                 {/* Component Upload Section */}
-                <section className="border rounded-xl p-8 bg-white">
+                <section className="border rounded-xl p-8 bg-white dark:bg-black dark:border-gray-800">
                   <div className="flex items-start gap-4 mb-6">
                     <FileSpreadsheet className="h-6 w-6 text-teal-600 mt-1" />
                     <div>
-                      <h2 className="text-xl font-semibold mb-2">Upload Excel File</h2>
-                      <p className="text-gray-600">
+                      <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Upload Excel File</h2>
+                      <p className="text-gray-600 dark:text-gray-300">
                         Quick and efficient way to upload large amounts of data using our Excel templates.
                       </p>
                     </div>
@@ -69,13 +77,13 @@ export default function ExcelUploadPage() {
 
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-sm font-medium text-gray-600 mb-2">Download Template</h3>
-                      <p className="text-sm text-gray-500 mb-4">
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Download Template</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                         Use our template to ensure your data is formatted correctly.
                       </p>
                       <Button 
                         variant="outline" 
-                        className="bg-teal-50 text-teal-600 border-teal-600 hover:bg-teal-100"
+                        className="bg-teal-50 dark:bg-teal-900 text-teal-600 dark:text-teal-400 border-teal-600 dark:border-teal-400 hover:bg-teal-100 dark:hover:bg-teal-800"
                         asChild
                       >
                         <a href="/templates/component-template.xlsx" download>
@@ -87,13 +95,13 @@ export default function ExcelUploadPage() {
                     <div
                       onDrop={handleDrop('component')}
                       onDragOver={handleDragOver}
-                      className="border-2 border-dashed rounded-lg p-8 text-center hover:border-teal-600 transition-colors"
+                      className="border-2 border-dashed rounded-lg p-8 text-center hover:border-teal-600 dark:hover:border-teal-400 transition-colors"
                     >
-                      <Upload className="w-10 h-10 mx-auto mb-4 text-gray-400" />
-                      <p className="text-gray-600 mb-2">
+                      <Upload className="w-10 h-10 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                      <p className="text-gray-600 dark:text-gray-300 mb-2">
                         Drag & drop your Excel file here
                       </p>
-                      <p className="text-sm text-gray-500 mb-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                         or click to select file
                       </p>
                       <input
@@ -105,7 +113,7 @@ export default function ExcelUploadPage() {
                       />
                       <Button 
                         variant="outline"
-                        className="bg-teal-50 text-teal-600 border-teal-600 hover:bg-teal-100"
+                        className="bg-teal-50 dark:bg-teal-900 text-teal-600 dark:text-teal-400 border-teal-600 dark:border-teal-400 hover:bg-teal-100 dark:hover:bg-teal-800"
                         onClick={() => document.getElementById('component-upload')?.click()}
                       >
                         Browse Files
@@ -115,16 +123,16 @@ export default function ExcelUploadPage() {
                 </section>
 
                 {/* Material Upload Section */}
-                <section className="border rounded-xl p-8 bg-white">
+                <section className="border rounded-xl p-8 bg-white dark:bg-black dark:border-gray-800">
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-sm font-medium text-gray-600 mb-2">Download Template</h3>
-                      <p className="text-sm text-gray-500 mb-4">
+                      <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Download Template</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                         Use our template to ensure your data is formatted correctly.
                       </p>
                       <Button 
                         variant="outline" 
-                        className="bg-teal-50 text-teal-600 border-teal-600 hover:bg-teal-100"
+                        className="bg-teal-50 dark:bg-teal-900 text-teal-600 dark:text-teal-400 border-teal-600 dark:border-teal-400 hover:bg-teal-100 dark:hover:bg-teal-800"
                         asChild
                       >
                         <a href="/templates/material-template.xlsx" download>
@@ -136,13 +144,13 @@ export default function ExcelUploadPage() {
                     <div
                       onDrop={handleDrop('material')}
                       onDragOver={handleDragOver}
-                      className="border-2 border-dashed rounded-lg p-8 text-center hover:border-teal-600 transition-colors"
+                      className="border-2 border-dashed rounded-lg p-8 text-center hover:border-teal-600 dark:hover:border-teal-400 transition-colors"
                     >
-                      <Upload className="w-10 h-10 mx-auto mb-4 text-gray-400" />
-                      <p className="text-gray-600 mb-2">
+                      <Upload className="w-10 h-10 mx-auto mb-4 text-gray-400 dark:text-gray-500" />
+                      <p className="text-gray-600 dark:text-gray-300 mb-2">
                         Drag & drop your Excel file here
                       </p>
-                      <p className="text-sm text-gray-500 mb-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                         or click to select file
                       </p>
                       <input
@@ -154,7 +162,7 @@ export default function ExcelUploadPage() {
                       />
                       <Button 
                         variant="outline"
-                        className="bg-teal-50 text-teal-600 border-teal-600 hover:bg-teal-100"
+                        className="bg-teal-50 dark:bg-teal-900 text-teal-600 dark:text-teal-400 border-teal-600 dark:border-teal-400 hover:bg-teal-100 dark:hover:bg-teal-800"
                         onClick={() => document.getElementById('material-upload')?.click()}
                       >
                         Browse Files
@@ -167,26 +175,26 @@ export default function ExcelUploadPage() {
 
             {/* Right Sidebar */}
             <div className="lg:w-80 space-y-6">
-              <Card className="p-6">
+              <Card className="p-6 dark:bg-black dark:border-gray-800">
                 <div className="flex items-start gap-4">
-                  <Lightbulb className="h-5 w-5 text-teal-600 flex-shrink-0 mt-1" />
+                  <Lightbulb className="h-5 w-5 text-teal-600 dark:text-teal-400 flex-shrink-0 mt-1" />
                   <div>
-                    <h2 className="text-lg font-semibold mb-4">Tips & Guidelines</h2>
+                    <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Tips & Guidelines</h2>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
                           Choose Excel Upload:
                         </p>
-                        <ul className="text-sm text-gray-500 list-disc pl-4 space-y-1">
+                        <ul className="text-sm text-gray-500 dark:text-gray-400 list-disc pl-4 space-y-1">
                           <li>for large datasets</li>
                           <li>when you have existing data in spreadsheets</li>
                         </ul>
                       </div>
                       <div className="space-y-2">
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-300">
                           Manual Entry is best for:
                         </p>
-                        <ul className="text-sm text-gray-500 list-disc pl-4 space-y-1">
+                        <ul className="text-sm text-gray-500 dark:text-gray-400 list-disc pl-4 space-y-1">
                           <li>new products</li>
                           <li>when you need to enter data gradually</li>
                         </ul>
@@ -196,19 +204,19 @@ export default function ExcelUploadPage() {
                 </div>
               </Card>
 
-              <Card className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Quick Links</h2>
+              <Card className="p-6 dark:bg-black dark:border-gray-800">
+                <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Quick Links</h2>
                 <div className="space-y-3">
                   <Link 
                     href="#"
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg text-sm text-gray-600 hover:text-gray-900"
+                    className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                   >
                     View Documentation
                     <ExternalLink className="h-4 w-4" />
                   </Link>
                   <Link 
                     href="#"
-                    className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg text-sm text-gray-600 hover:text-gray-900"
+                    className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                   >
                     Get Support
                     <ExternalLink className="h-4 w-4" />
@@ -222,4 +230,3 @@ export default function ExcelUploadPage() {
     </div>
   )
 }
-

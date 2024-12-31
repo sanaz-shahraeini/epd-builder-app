@@ -18,7 +18,7 @@ export function RightSidebar() {
                 <Lightbulb className="h-3 w-3 text-teal-600" />
               </span>
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Choose Excel Upload for large datasets or when you have existing data in spreadsheets
             </p>
           </div>
@@ -28,7 +28,7 @@ export function RightSidebar() {
                 <Lightbulb className="h-3 w-3 text-teal-600" />
               </span>
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Manual Entry is best for new products or when you need to enter data gradually
             </p>
           </div>
@@ -38,7 +38,7 @@ export function RightSidebar() {
                 <Lightbulb className="h-3 w-3 text-teal-600" />
               </span>
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Phase Base UI provides structured guidance, while Free UI offers more flexibility
             </p>
           </div>
@@ -70,7 +70,7 @@ export function RightSidebar() {
           <HelpCircle className="w-5 h-5 text-teal-600 flex-shrink-0 mt-1" />
           <div>
             <h2 className="text-base font-bold text-teal-600 mb-2">Need Help?</h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Our support team is here to assist you with any questions about the EPD creation process.
             </p>
             <Button className="w-full bg-teal-600 hover:bg-teal-700">

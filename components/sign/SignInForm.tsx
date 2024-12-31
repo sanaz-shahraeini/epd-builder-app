@@ -1,531 +1,268 @@
-"use client";
-import React, { useState } from "react";
+import { useTranslations } from 'next-intl';
+import { useState } from "react";
 import { useFormik } from "formik";
-import * as Yup from "yup";
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Modal,
-  Tabs,
-  Tab,
-  Divider,
-  Paper,
-  CircularProgress,
-  Alert,
-} from "@mui/material";
-import GoogleIcon from "@mui/icons-material/Google";
-import { signIn } from "next-auth/react";
+import * as yup from "yup";
+import { FaGoogle } from "react-icons/fa";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import LanguageSwitcher from '../LanguageSwitcher';
 
 interface SignInFormProps {
   open: boolean;
   onClose: () => void;
-  setShowSignIn: (show: boolean) => void;
   setShowSignUp: (show: boolean) => void;
   setShowForgotPassword: (show: boolean) => void;
 }
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-interface SignInResponse {
-  message?: string;
-  error?: string;
-  access_token: string;
-  refresh_token: string;
-  user: any;
-}
-
-interface Message {
+type Message = {
   text: string;
-  type: "success" | "error";
-}
+  type: "error" | "success";
+};
 
-const validationSchema = Yup.object({
-  username: Yup.string()
-    .required("Username is required")
-    .min(3, "Username must be at least 3 characters"),
-  password: Yup.string()
-    .required("Password is required")
-    .min(8, "Password must be at least 8 characters"),
+const validationSchema = yup.object({
+  username: yup.string().required("Username is required"),
+  password: yup.string().required("Password is required"),
 });
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`auth-tabpanel-${index}`}
-      aria-labelledby={`auth-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-}
-
-const SignInForm: React.FC<SignInFormProps> = ({
+export function SignInForm({
   open,
   onClose,
-  setShowSignIn,
   setShowSignUp,
   setShowForgotPassword,
-}) => {
-  const [tabValue, setTabValue] = useState(0);
+}: SignInFormProps) {
+  const t = useTranslations('SignIn');
+  const [tabValue, setTabValue] = useState("regular");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-    setMessage(null);
-  };
-
-  const handleGoogleSignIn = () => {
-    signIn("google");
-  };
-
-  const handleSignIn = async (values: {
-    username: string;
-    password: string;
-  }) => {
-    setLoading(true);
-    setMessage(null);
-
-    try {
-      const response = await fetch("http://localhost:8000/users/signin/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: values.username,
-          password: values.password,
-          userType: tabValue === 0 ? "regular" : "company",
-        }),
-      });
-
-      const data: SignInResponse = await response.json();
-
-      if (response.ok) {
-        setMessage({
-          text: data.message || "Sign in successful",
-          type: "success",
-        });
-        // Store tokens
-        localStorage.setItem("access_token", data.access_token);
-        localStorage.setItem("refresh_token", data.refresh_token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setTimeout(() => {
-          onClose();
-        }, 1500);
-      } else {
-        setMessage({ text: data.error || "Sign in failed", type: "error" });
-      }
-    } catch (error) {
-      setMessage({ text: "Network error occurred", type: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formik = useFormik({
     initialValues: {
       username: "",
       password: "",
     },
-    validationSchema,
-    onSubmit: handleSignIn,
+    validationSchema: validationSchema,
+    onSubmit: async (values) => {
+      setLoading(true);
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(values),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setMessage({
+            text: data.message || t("signInSuccess"),
+            type: "success",
+          });
+          setTimeout(() => {
+            onClose();
+          }, 1500);
+        } else {
+          setMessage({ text: data.error || t("signInFailed"), type: "error" });
+        }
+      } catch (error) {
+        setMessage({ text: t("networkError"), type: "error" });
+      } finally {
+        setLoading(false);
+      }
+    },
   });
 
   const handleSignUpClick = () => {
-    setShowSignIn(false);
+    onClose();
     setShowSignUp(true);
   };
 
+  const handleGoogleSignIn = () => {
+    // Implement Google sign-in logic
+  };
+
   return (
-    <>
-      <Modal
-        open={open}
-        onClose={onClose}
-        aria-labelledby="sign-in-modal"
-        aria-describedby="sign-in-form"
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "90%",
-            maxWidth: 450,
-            bgcolor: "#fff",
-            borderRadius: 2,
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-            p: 4,
-            color: "#1B4242",
-          }}
-        >
-          <Typography
-            variant="h4"
-            component="h2"
-            align="center"
-            sx={{
-              mb: 4,
-              fontWeight: 600,
-              background: "linear-gradient(45deg, #42B7B0, #1B4242)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            Welcome Back
-          </Typography>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px]">
+        <div className="grid gap-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-semibold tracking-tight bg-gradient-to-r from-[#42B7B0] to-[#1B4242] bg-clip-text text-transparent">
+              {t('welcomeBack')}
+            </h1>
+            <LanguageSwitcher />
+          </div>
 
           {message && (
-            <Alert
-              severity={message.type}
-              sx={{
-                mb: 3,
-                borderRadius: 1.5,
-                "& .MuiAlert-icon": {
-                  fontSize: "1.5rem",
-                },
-              }}
-              onClose={() => setMessage(null)}
-            >
-              {message.text}
+            <Alert variant={message.type === "error" ? "destructive" : "default"}>
+              <AlertDescription>{message.text}</AlertDescription>
             </Alert>
           )}
 
-          <Paper
-            sx={{
-              borderRadius: 2,
-              overflow: "hidden",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
-            }}
-          >
-            <Tabs
-              value={tabValue}
-              onChange={handleTabChange}
-              variant="fullWidth"
-              sx={{
-                borderBottom: "1px solid rgba(0, 0, 0, 0.08)",
-                ".MuiTab-root": {
-                  color: "#666",
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  py: 2,
-                  "&.Mui-selected": {
-                    color: "#42B7B0",
-                    fontWeight: 600,
-                  },
-                },
-                ".MuiTabs-indicator": {
-                  backgroundColor: "#42B7B0",
-                  height: 3,
-                },
-              }}
+          <Tabs value={tabValue} onValueChange={setTabValue} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="regular">{t('regularUser')}</TabsTrigger>
+              <TabsTrigger value="company">{t('companyUser')}</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="regular">
+              <form onSubmit={formik.handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">{t('username')}</Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    disabled={loading}
+                    {...formik.getFieldProps('username')}
+                    className={cn(
+                      formik.touched.username && formik.errors.username && "border-red-500"
+                    )}
+                  />
+                  {formik.touched.username && formik.errors.username && (
+                    <p className="text-sm text-red-500">{formik.errors.username}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">{t('password')}</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    disabled={loading}
+                    {...formik.getFieldProps('password')}
+                    className={cn(
+                      formik.touched.password && formik.errors.password && "border-red-500"
+                    )}
+                  />
+                  {formik.touched.password && formik.errors.password && (
+                    <p className="text-sm text-red-500">{formik.errors.password}</p>
+                  )}
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="px-0 font-normal"
+                  >
+                    {t('forgotPassword')}
+                  </Button>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
+                  ) : (
+                    t('signIn')
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="company">
+              <form onSubmit={formik.handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username">{t('username')}</Label>
+                  <Input
+                    id="username"
+                    name="username"
+                    type="text"
+                    disabled={loading}
+                    {...formik.getFieldProps('username')}
+                    className={cn(
+                      formik.touched.username && formik.errors.username && "border-red-500"
+                    )}
+                  />
+                  {formik.touched.username && formik.errors.username && (
+                    <p className="text-sm text-red-500">{formik.errors.username}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">{t('password')}</Label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    disabled={loading}
+                    {...formik.getFieldProps('password')}
+                    className={cn(
+                      formik.touched.password && formik.errors.password && "border-red-500"
+                    )}
+                  />
+                  {formik.touched.password && formik.errors.password && (
+                    <p className="text-sm text-red-500">{formik.errors.password}</p>
+                  )}
+                </div>
+
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="px-0 font-normal"
+                  >
+                    {t('forgotPassword')}
+                  </Button>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
+                  ) : (
+                    t('signIn')
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+
+          <Separator />
+
+          {tabValue === "regular" && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
             >
-              <Tab label="Regular User" />
-              <Tab label="Company User" />
-            </Tabs>
+              <FaGoogle className="mr-2 h-4 w-4" />
+              {t('signInWithGoogle')}
+            </Button>
+          )}
 
-            <TabPanel value={tabValue} index={0}>
-              <form onSubmit={formik.handleSubmit}>
-                <TextField
-                  fullWidth
-                  id="username"
-                  name="username"
-                  label="Username"
-                  variant="outlined"
-                  margin="normal"
-                  value={formik.values.username}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  error={formik.touched.username && Boolean(formik.errors.username)}
-                  helperText={formik.touched.username && formik.errors.username}
-                  disabled={loading}
-                  sx={{
-                    mb: 2,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 1.5,
-                      "&:hover fieldset": {
-                        borderColor: "#42B7B0",
-                      },
-                    },
-                    "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#42B7B0 !important",
-                    },
-                    "& .MuiInputLabel-root.Mui-focused": {
-                      color: "#42B7B0",
-                    },
-                  }}
-                />
-                <TextField
-                  fullWidth
-                  id="password"
-                  name="password"
-                  label="Password"
-                  type="password"
-                  variant="outlined"
-                  margin="normal"
-                  value={formik.values.password}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  error={formik.touched.password && Boolean(formik.errors.password)}
-                  helperText={formik.touched.password && formik.errors.password}
-                  disabled={loading}
-                  sx={{
-                    mb: 1,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 1.5,
-                      "&:hover fieldset": {
-                        borderColor: "#42B7B0",
-                      },
-                    },
-                    "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#42B7B0 !important",
-                    },
-                    "& .MuiInputLabel-root.Mui-focused": {
-                      color: "#42B7B0",
-                    },
-                  }}
-                />
-
-                <Box sx={{ textAlign: "right", mb: 2 }}>
-                  <Typography
-                    variant="body2"
-                    component="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    sx={{
-                      background: "none",
-                      border: "none",
-                      color: "#42B7B0",
-                      cursor: "pointer",
-                      textDecoration: "none",
-                      "&:hover": {
-                        textDecoration: "underline",
-                        color: "#1B4242",
-                      },
-                      padding: 0,
-                      font: "inherit",
-                    }}
-                  >
-                    Forgot Password?
-                  </Typography>
-                </Box>
-
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  disabled={loading}
-                  sx={{
-                    mb: 2,
-                    py: 1.5,
-                    borderRadius: 1.5,
-                    textTransform: "none",
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                    background: "linear-gradient(45deg, #42B7B0, #3AA19B)",
-                    boxShadow: "0 4px 12px rgba(66, 183, 176, 0.2)",
-                    "&:hover": {
-                      background: "linear-gradient(45deg, #3AA19B, #1B4242)",
-                      boxShadow: "0 6px 16px rgba(66, 183, 176, 0.3)",
-                    },
-                    "&.Mui-disabled": {
-                      bgcolor: "#A5D3D1",
-                    },
-                  }}
-                >
-                  {loading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    "Log in"
-                  )}
-                </Button>
-              </form>
-            </TabPanel>
-
-            <TabPanel value={tabValue} index={1}>
-              <form onSubmit={formik.handleSubmit}>
-                <TextField
-                  fullWidth
-                  id="username"
-                  name="username"
-                  label="Username"
-                  variant="outlined"
-                  margin="normal"
-                  value={formik.values.username}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  error={formik.touched.username && Boolean(formik.errors.username)}
-                  helperText={formik.touched.username && formik.errors.username}
-                  disabled={loading}
-                  sx={{
-                    mb: 2,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 1.5,
-                      "&:hover fieldset": {
-                        borderColor: "#42B7B0",
-                      },
-                    },
-                    "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#42B7B0 !important",
-                    },
-                    "& .MuiInputLabel-root.Mui-focused": {
-                      color: "#42B7B0",
-                    },
-                  }}
-                />
-                <TextField
-                  fullWidth
-                  id="password"
-                  name="password"
-                  label="Password"
-                  type="password"
-                  variant="outlined"
-                  margin="normal"
-                  value={formik.values.password}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  error={formik.touched.password && Boolean(formik.errors.password)}
-                  helperText={formik.touched.password && formik.errors.password}
-                  disabled={loading}
-                  sx={{
-                    mb: 1,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 1.5,
-                      "&:hover fieldset": {
-                        borderColor: "#42B7B0",
-                      },
-                    },
-                    "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "#42B7B0 !important",
-                    },
-                    "& .MuiInputLabel-root.Mui-focused": {
-                      color: "#42B7B0",
-                    },
-                  }}
-                />
-
-                <Box sx={{ textAlign: "right", mb: 2 }}>
-                  <Typography
-                    variant="body2"
-                    component="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    sx={{
-                      background: "none",
-                      border: "none",
-                      color: "#42B7B0",
-                      cursor: "pointer",
-                      textDecoration: "none",
-                      "&:hover": {
-                        textDecoration: "underline",
-                        color: "#1B4242",
-                      },
-                      padding: 0,
-                      font: "inherit",
-                    }}
-                  >
-                    Forgot Password?
-                  </Typography>
-                </Box>
-
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  disabled={loading}
-                  sx={{
-                    mb: 2,
-                    py: 1.5,
-                    borderRadius: 1.5,
-                    textTransform: "none",
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                    background: "linear-gradient(45deg, #42B7B0, #3AA19B)",
-                    boxShadow: "0 4px 12px rgba(66, 183, 176, 0.2)",
-                    "&:hover": {
-                      background: "linear-gradient(45deg, #3AA19B, #1B4242)",
-                      boxShadow: "0 6px 16px rgba(66, 183, 176, 0.3)",
-                    },
-                    "&.Mui-disabled": {
-                      bgcolor: "#A5D3D1",
-                    },
-                  }}
-                >
-                  {loading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    "Log in"
-                  )}
-                </Button>
-              </form>
-            </TabPanel>
-
-            <Divider sx={{ my: 2 }} />
-
-            {tabValue === 0 && (
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              {t('noAccount')}{" "}
               <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<GoogleIcon />}
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-                sx={{
-                  py: 1.5,
-                  borderRadius: 1.5,
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  bgcolor: "#fff",
-                  color: "#42B7B0",
-                  borderColor: "#42B7B0",
-                  borderWidth: "2px",
-                  "&:hover": {
-                    bgcolor: "rgba(66, 183, 176, 0.05)",
-                    borderColor: "#3AA19B",
-                    borderWidth: "2px",
-                  },
-                  mb: 2,
-                }}
+                variant="link"
+                className="p-0 font-normal"
+                onClick={handleSignUpClick}
               >
-                Log in with Google
+                {t('signUp')}
               </Button>
-            )}
-
-            <Box sx={{ textAlign: "center" }}>
-              <Typography variant="body2">
-                Don't have an account?{" "}
-                <Button
-                  onClick={handleSignUpClick}
-                  sx={{
-                    padding: "4px 8px",
-                    fontSize: "inherit",
-                    color: "#42B7B0",
-                    fontWeight: 600,
-                    textTransform: "none",
-                    "&:hover": {
-                      color: "#3AA19B",
-                      background: "rgba(66, 183, 176, 0.05)",
-                    },
-                  }}
-                >
-                  Sign up
-                </Button>
-              </Typography>
-            </Box>
-          </Paper>
-        </Box>
-      </Modal>
-    </>
+            </p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
-};
-
-export default SignInForm;
+}

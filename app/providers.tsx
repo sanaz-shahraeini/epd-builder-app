@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react'
 import { ErrorBoundary } from '@/lib/error-boundary'
+import { ThemeProvider } from 'next-themes'
 
 interface ProvidersProps {
   children: ReactNode
@@ -10,8 +11,14 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <ErrorBoundary>
-      {children}
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        {children}
+      </ThemeProvider>
     </ErrorBoundary>
   )
 }
-

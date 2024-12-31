@@ -91,75 +91,89 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="materials" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600">
+      <TabsList className="grid w-full grid-cols-3 bg-gray-100/50 dark:bg-gray-900/20 p-1 gap-2">
+        <TabsTrigger 
+          value="materials" 
+          className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-black data-[state=active]:text-teal-600 dark:text-gray-400 dark:data-[state=active]:text-teal-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+        >
+          <Tool className="h-4 w-4" />
           Materials
         </TabsTrigger>
-        <TabsTrigger value="details" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600">
-          Component Details
+        <TabsTrigger 
+          value="details" 
+          className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-black data-[state=active]:text-teal-600 dark:text-gray-400 dark:data-[state=active]:text-teal-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+        >
+          <Info className="h-4 w-4" />
+          Details
         </TabsTrigger>
-        <TabsTrigger value="manufacturing" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-600">
+        <TabsTrigger 
+          value="manufacturing" 
+          className="flex items-center gap-2 data-[state=active]:bg-white dark:data-[state=active]:bg-black data-[state=active]:text-teal-600 dark:text-gray-400 dark:data-[state=active]:text-teal-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+        >
+          <Factory className="h-4 w-4" />
           Manufacturing
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="materials" className="mt-6">
+      <TabsContent value="materials" className="space-y-4 mt-4">
         <div className="space-y-6">
           {materials.map((material) => (
-            <div key={material.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-end">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Material Name*
+            <div key={material.id} className="flex items-end gap-4">
+              <div className="flex-1">
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Material Name</span>
+                  <Input
+                    placeholder="Enter material name"
+                    value={material.name}
+                    onChange={(e) => updateMaterial(material.id, { name: e.target.value })}
+                    className="mt-1 dark:bg-black dark:border-gray-800"
+                  />
                 </label>
-                <Input
-                  placeholder="Enter material name"
-                  value={material.name}
-                  onChange={(e) => updateMaterial(material.id, { name: e.target.value })}
-                />
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Quantity*
-                </label>
-                <div className="flex gap-2">
+              <div className="w-24">
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Quantity</span>
                   <Input
                     type="number"
                     value={material.quantity}
-                    onChange={(e) => updateMaterial(material.id, { quantity: parseFloat(e.target.value) || 0 })}
-                    className="w-24"
+                    onChange={(e) => updateMaterial(material.id, { quantity: parseFloat(e.target.value) })}
+                    className="mt-1 dark:bg-black dark:border-gray-800"
                   />
+                </label>
+              </div>
+              <div className="w-24">
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Unit</span>
                   <Select
                     value={material.unit}
-                    onValueChange={(value: 'kg' | 'g') => updateMaterial(material.id, { unit: value })}
+                    onValueChange={(value) => updateMaterial(material.id, { unit: value as 'kg' | 'g' })}
                   >
-                    <SelectTrigger className="w-20">
-                      <SelectValue />
+                    <SelectTrigger className="mt-1 dark:bg-black dark:border-gray-800">
+                      <SelectValue placeholder="Unit" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="kg">Kg</SelectItem>
+                      <SelectItem value="kg">kg</SelectItem>
                       <SelectItem value="g">g</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  % Recycled*
                 </label>
-                <Input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={material.recycled}
-                  onChange={(e) => updateMaterial(material.id, { recycled: parseFloat(e.target.value) || 0 })}
-                  className="w-24"
-                />
+              </div>
+              <div className="w-24">
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Recycled %</span>
+                  <Input
+                    type="number"
+                    value={material.recycled}
+                    onChange={(e) => updateMaterial(material.id, { recycled: parseFloat(e.target.value) })}
+                    className="mt-1 dark:bg-black dark:border-gray-800"
+                  />
+                </label>
               </div>
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={() => removeMaterial(material.id)}
-                className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:text-red-200 dark:hover:bg-red-950/30 h-10"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -185,56 +199,56 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Transport
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Transport</span>
+                <Select>
+                  <SelectTrigger className="mt-1 dark:bg-black dark:border-gray-800">
+                    <SelectValue placeholder="Select transport type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="road">Road</SelectItem>
+                    <SelectItem value="rail">Rail</SelectItem>
+                    <SelectItem value="sea">Sea</SelectItem>
+                    <SelectItem value="air">Air</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select transport type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="road">Road</SelectItem>
-                  <SelectItem value="rail">Rail</SelectItem>
-                  <SelectItem value="sea">Sea</SelectItem>
-                  <SelectItem value="air">Air</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Origin
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Origin</span>
+                <Select>
+                  <SelectTrigger className="mt-1 dark:bg-black dark:border-gray-800">
+                    <SelectValue placeholder="Select origin" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="factory">Factory</SelectItem>
+                    <SelectItem value="warehouse">Warehouse</SelectItem>
+                    <SelectItem value="port">Port</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select origin" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="factory">Factory</SelectItem>
-                  <SelectItem value="warehouse">Warehouse</SelectItem>
-                  <SelectItem value="port">Port</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Destination
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Destination</span>
+                <Select>
+                  <SelectTrigger className="mt-1 dark:bg-black dark:border-gray-800">
+                    <SelectValue placeholder="Select destination" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="factory">Factory</SelectItem>
+                    <SelectItem value="warehouse">Warehouse</SelectItem>
+                    <SelectItem value="port">Port</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select destination" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="factory">Factory</SelectItem>
-                  <SelectItem value="warehouse">Warehouse</SelectItem>
-                  <SelectItem value="port">Port</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Distance (km)
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Distance (km)</span>
+                <Input type="number" placeholder="Enter distance" className="mt-1 dark:bg-black dark:border-gray-800" />
               </label>
-              <Input type="number" placeholder="Enter distance" />
             </div>
           </div>
         </div>
@@ -247,30 +261,31 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
           <div className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Type
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Type</span>
+                  <Select value={maintenanceType} onValueChange={setMaintenanceType}>
+                    <SelectTrigger className="mt-1 dark:bg-black dark:border-gray-800">
+                      <SelectValue placeholder="Select maintenance type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="maintenance">Maintenance</SelectItem>
+                      <SelectItem value="replacement">Replacement</SelectItem>
+                      <SelectItem value="repair">Repair</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </label>
-                <Select value={maintenanceType} onValueChange={setMaintenanceType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select maintenance type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="replacement">Replacement</SelectItem>
-                    <SelectItem value="repair">Repair</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Frequency (per year)
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Frequency (per year)</span>
+                  <Input 
+                    type="number" 
+                    placeholder="Enter frequency"
+                    value={maintenanceFrequency}
+                    onChange={(e) => setMaintenanceFrequency(e.target.value)}
+                    className="mt-1 dark:bg-black dark:border-gray-800"
+                  />
                 </label>
-                <Input 
-                  type="number" 
-                  placeholder="Enter frequency"
-                  value={maintenanceFrequency}
-                  onChange={(e) => setMaintenanceFrequency(e.target.value)}
-                />
               </div>
             </div>
 
@@ -279,50 +294,51 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
                 {maintenanceMaterials.map((material) => (
                   <div key={material.id} className="grid grid-cols-[1fr_auto_auto_auto] gap-4 items-end">
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Material Name
+                      <label className="block">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Material Name</span>
+                        <Input
+                          placeholder="Enter material name"
+                          value={material.name}
+                          onChange={(e) => updateMaintenanceMaterial(material.id, { name: e.target.value })}
+                          className="mt-1 dark:bg-black dark:border-gray-800"
+                        />
                       </label>
-                      <Input
-                        placeholder="Enter material name"
-                        value={material.name}
-                        onChange={(e) => updateMaintenanceMaterial(material.id, { name: e.target.value })}
-                      />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Quantity
+                      <label className="block">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Quantity</span>
+                        <Input
+                          type="number"
+                          value={material.quantity}
+                          onChange={(e) => updateMaintenanceMaterial(material.id, { quantity: parseFloat(e.target.value) })}
+                          className="mt-1 w-24 dark:bg-black dark:border-gray-800"
+                        />
                       </label>
-                      <Input
-                        type="number"
-                        value={material.quantity}
-                        onChange={(e) => updateMaintenanceMaterial(material.id, { quantity: parseFloat(e.target.value) || 0 })}
-                        className="w-24"
-                      />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Unit
+                      <label className="block">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Unit</span>
+                        <Select
+                          value={material.unit}
+                          onValueChange={(value) => updateMaintenanceMaterial(material.id, { unit: value })}
+                        >
+                          <SelectTrigger className="w-24 dark:bg-black dark:border-gray-800">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="kg">Kg</SelectItem>
+                            <SelectItem value="g">g</SelectItem>
+                            <SelectItem value="l">L</SelectItem>
+                            <SelectItem value="ml">mL</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </label>
-                      <Select
-                        value={material.unit}
-                        onValueChange={(value) => updateMaintenanceMaterial(material.id, { unit: value })}
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="kg">Kg</SelectItem>
-                          <SelectItem value="g">g</SelectItem>
-                          <SelectItem value="l">L</SelectItem>
-                          <SelectItem value="ml">mL</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => removeMaintenanceMaterial(material.id)}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-500/10"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -349,19 +365,19 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
           </div>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Number of components used
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Number of components used</span>
+                <Input type="number" placeholder="Enter number of components" className="mt-1 dark:bg-black dark:border-gray-800" />
               </label>
-              <Input type="number" placeholder="Enter number of components" />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Component description
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Component description</span>
+                <Textarea 
+                  placeholder="Enter component description"
+                  className="mt-1 min-h-[100px] dark:bg-black dark:border-gray-800"
+                />
               </label>
-              <Textarea 
-                placeholder="Enter component description"
-                className="min-h-[100px]"
-              />
             </div>
           </div>
         </div>
@@ -382,7 +398,7 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
               />
               <label 
                 htmlFor="functionalUnit" 
-                className="text-sm font-medium text-gray-700 cursor-pointer"
+                className="text-sm font-medium text-gray-700 dark:text-gray-100 cursor-pointer"
               >
                 Equal to functional unit
               </label>
@@ -400,25 +416,25 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Production Quantity
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Production Quantity</span>
+                  <Input placeholder="Enter production quantity" className="mt-1 dark:bg-black dark:border-gray-800" />
                 </label>
-                <Input placeholder="Enter production quantity" />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Production Unit
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Production Unit</span>
+                  <Select>
+                    <SelectTrigger className="mt-1 dark:bg-black dark:border-gray-800">
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pieces">Pieces</SelectItem>
+                      <SelectItem value="units">Units</SelectItem>
+                      <SelectItem value="sets">Sets</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pieces">Pieces</SelectItem>
-                    <SelectItem value="units">Units</SelectItem>
-                    <SelectItem value="sets">Sets</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           </div>
@@ -431,40 +447,40 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Utility Type
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Utility Type</span>
+                <Select>
+                  <SelectTrigger className="mt-1 dark:bg-black dark:border-gray-800">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="electricity">Electricity</SelectItem>
+                    <SelectItem value="gas">Natural Gas</SelectItem>
+                    <SelectItem value="water">Water</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="electricity">Electricity</SelectItem>
-                  <SelectItem value="gas">Natural Gas</SelectItem>
-                  <SelectItem value="water">Water</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Utility Quantity
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Utility Quantity</span>
+                <Input placeholder="Enter quantity" className="mt-1 dark:bg-black dark:border-gray-800" />
               </label>
-              <Input placeholder="Enter quantity" />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Utility Unit
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Utility Unit</span>
+                <Select>
+                  <SelectTrigger className="mt-1 dark:bg-black dark:border-gray-800">
+                    <SelectValue placeholder="Select unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="kwh">kWh</SelectItem>
+                    <SelectItem value="mj">MJ</SelectItem>
+                    <SelectItem value="m3">m³</SelectItem>
+                  </SelectContent>
+                </Select>
               </label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="kwh">kWh</SelectItem>
-                  <SelectItem value="mj">MJ</SelectItem>
-                  <SelectItem value="m3">m³</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </div>
@@ -483,7 +499,7 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
               />
               <label 
                 htmlFor="requiresEnergy" 
-                className="text-sm font-medium text-gray-700 cursor-pointer"
+                className="text-sm font-medium text-gray-700 dark:text-gray-100 cursor-pointer"
               >
                 Requires Energy
               </label>
@@ -502,25 +518,25 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
             {requiresEnergy && (
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Operation Quantity
+                  <label className="block">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Operation Quantity</span>
+                    <Input placeholder="Enter operation quantity" className="mt-1 dark:bg-black dark:border-gray-800" />
                   </label>
-                  <Input placeholder="Enter operation quantity" />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Operation Unit
+                  <label className="block">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Operation Unit</span>
+                    <Select>
+                      <SelectTrigger className="mt-1 dark:bg-black dark:border-gray-800">
+                        <SelectValue placeholder="Select unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kwh">kWh</SelectItem>
+                        <SelectItem value="mj">MJ</SelectItem>
+                        <SelectItem value="m3">m³</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="kwh">kWh</SelectItem>
-                      <SelectItem value="mj">MJ</SelectItem>
-                      <SelectItem value="m3">m³</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
             )}
@@ -530,4 +546,3 @@ export function ComponentTabs({ componentId, subComponentId }: ComponentTabsProp
     </Tabs>
   )
 }
-

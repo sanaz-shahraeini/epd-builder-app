@@ -1,0 +1,19 @@
+{
+    "metadata": {
+      "title": "TerraNEXT - Produkterstellung",
+      "description": "Erstellen und verwalten Sie Ihre Produkte"
+    },
+    "Index": {
+      "title": "Produkterstellung",
+      "description": "Erstellen und verwalten Sie Ihre Produkte"
+    },
+    "SignIn": {
+      "title": "Anmelden",
+      "description": "Melden Sie sich bei Ihrem Konto an",
+      "username": "Benutzername",
+      "password": "Passwort",
+      "submit": "Anmelden",
+      "forgotPassword": "Passwort vergessen?",
+      "signUp": "Registrieren"
+    }
+  }

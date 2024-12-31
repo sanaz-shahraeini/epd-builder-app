@@ -1,3 +1,7 @@
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin();
+
 let userConfig = undefined
 try {
   userConfig = await import('./v0-user-next.config')
@@ -19,30 +23,25 @@ const nextConfig = {
   experimental: {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
-    parallelServerCompiles: true,
   },
-}
-
-mergeConfig(nextConfig, userConfig)
-
-function mergeConfig(nextConfig, userConfig) {
-  if (!userConfig) {
-    return
-  }
-
-  for (const key in userConfig) {
-    if (
-      typeof nextConfig[key] === 'object' &&
-      !Array.isArray(nextConfig[key])
-    ) {
-      nextConfig[key] = {
-        ...nextConfig[key],
-        ...userConfig[key],
-      }
-    } else {
-      nextConfig[key] = userConfig[key]
-    }
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.json$/,
+      loader: 'json-loader',
+      type: 'javascript/auto'
+    });
+    return config;
   }
 }
 
-export default nextConfig
+function mergeConfig(baseConfig, userConfig) {
+  if (!userConfig) return baseConfig
+  const { default: config } = userConfig
+  return {
+    ...baseConfig,
+    ...config,
+  }
+}
+
+const mergedConfig = mergeConfig(nextConfig, userConfig);
+export default withNextIntl(mergedConfig);

@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google'
 import { Providers } from "./providers"
 import "./globals.css"
 import '@radix-ui/themes/styles.css';
-import { Theme } from "@radix-ui/themes";
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -20,11 +19,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Theme>
-          <div className="min-h-screen bg-gray-50">
+        <Providers>
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             {children}
           </div>
-        </Theme>
+        </Providers>
       </body>
     </html>
   )

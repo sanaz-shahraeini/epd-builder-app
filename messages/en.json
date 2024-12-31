@@ -1,0 +1,19 @@
+{
+    "metadata": {
+      "title": "TerraNEXT - Product Creation",
+      "description": "Create and manage your products"
+    },
+    "Index": {
+      "title": "Product Creation",
+      "description": "Create and manage your products"
+    },
+    "SignIn": {
+      "title": "Sign In",
+      "description": "Sign in to your account",
+      "username": "Username",
+      "password": "Password",
+      "submit": "Sign In",
+      "forgotPassword": "Forgot Password?",
+      "signUp": "Sign Up"
+    }
+  }
