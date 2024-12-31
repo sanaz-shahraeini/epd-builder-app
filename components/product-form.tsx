@@ -8,8 +8,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Upload, Package2, Info, ChevronDown, ChevronUp, Plus, HelpCircle, MapPin, Factory, Trash2, Zap, Brain, FileCheck, Settings, Menu, Lightbulb, BarChart2, FileText, LogOut, MessageSquare, Search, ChevronLeft } from 'lucide-react'
-import { ModeToggle } from "@/components/mode-toggle"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { ModeToggle } from "@/components/mode-toggle"
 import {
   Dialog,
   DialogContent,
@@ -85,19 +85,17 @@ export function ProductForm() {
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       <div className="flex-1">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => window.history.back()}
-              className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-50 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-full w-9 h-9 flex items-center justify-center transition-colors"
-            >
-              <ChevronLeft className="h-5 w-5" />
-              <span className="sr-only">Go back</span>
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Input Your Data</h1>
-          </div>
+        <div className="flex items-center gap-4 mb-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => window.history.back()}
+            className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-50 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-full w-9 h-9 flex items-center justify-center transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
+            <span className="sr-only">Go back</span>
+          </Button>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Input Your Data</h1>
         </div>
 
         <div className="space-y-8">
@@ -307,11 +305,28 @@ export function ProductForm() {
           <div className="h-[200px] rounded-lg overflow-hidden relative z-0">
             <Map />
           </div>
+
+          {/* Create Button - Desktop only */}
+          <div className="hidden lg:flex justify-center">
+            <Button 
+              size="lg" 
+              className="px-8 bg-teal-600 hover:bg-teal-700 text-white" 
+              onClick={handleCreateProduct}
+            >
+              Create Product
+            </Button>
+          </div>
         </div>
       </div>
 
+      {/* Right sidebar */}
       <div className="w-full lg:w-80 order-2 lg:order-none">
+        <div className="flex justify-end mb-6">
+          <ModeToggle />
+        </div>
+        
         <div className="space-y-6">
+          {/* Product Image Card */}
           <Card className="p-6">
           <SectionTitle className="mb-4">
           Product Image
@@ -345,6 +360,7 @@ export function ProductForm() {
             </div>
           </Card>
 
+          {/* Product Document Card */}
           <Card className="p-6 w-full lg:w-80">
           <SectionTitle className="mb-4">
           Product Document
@@ -379,6 +395,7 @@ export function ProductForm() {
             </div>
           </Card>
 
+          {/* Need Help Card */}
           <Card className="p-6 w-full lg:w-80">
             <div className="flex items-start gap-4">
             <HelpCircle className="w-5 h-5 text-teal-600 flex-shrink-0 mt-1" />
@@ -401,11 +418,12 @@ export function ProductForm() {
         </div>
       </div>
 
-      <div className="order-last w-full lg:hidden">
+      {/* Create Button - Mobile only */}
+      <div className="lg:hidden order-last w-full">
         <div className="flex justify-center mt-6">
           <Button 
             size="lg" 
-            className="px-8 bg-teal-600 hover:bg-teal-700 text-white w-full sm:w-auto" 
+            className="w-full sm:w-auto px-8 bg-teal-600 hover:bg-teal-700 text-white" 
             onClick={handleCreateProduct}
           >
             Create Product
@@ -413,18 +431,7 @@ export function ProductForm() {
         </div>
       </div>
 
-      <div className="hidden lg:block">
-        <div className="flex justify-center mt-6">
-          <Button 
-            size="lg" 
-            className="px-8 bg-teal-600 hover:bg-teal-700 text-white" 
-            onClick={handleCreateProduct}
-          >
-            Create Product
-          </Button>
-        </div>
-      </div>
-
+      {/* Dialog */}
       <Dialog open={showNextSteps} onOpenChange={setShowNextSteps}>
         <DialogContent 
           className="sm:max-w-md fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full max-w-md"
