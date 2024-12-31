@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Upload, Package2, Info, ChevronDown, ChevronUp, Plus, HelpCircle, MapPin, Factory, Trash2, Zap, Brain, FileCheck, Settings } from 'lucide-react'
+import { Upload, Package2, Info, ChevronDown, ChevronUp, Plus, HelpCircle, MapPin, Factory, Trash2, Zap, Brain, FileCheck, Settings, Menu, Lightbulb, BarChart2, FileText, LogOut, MessageSquare, Search, ChevronLeft } from 'lucide-react'
 import { ModeToggle } from "@/components/mode-toggle"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import dynamic from "next/dynamic"
 import { useRouter } from 'next/navigation'
 import { SectionHeader } from './section-header'
 import { SectionTitle } from './section-title'
+import Link from 'next/link'
 
 const Map = dynamic(() => import('./map'), { ssr: false })
 
@@ -84,9 +86,17 @@ export function ProductForm() {
     <div className="flex flex-col lg:flex-row gap-6">
       <div className="flex-1">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-semibold">Create New Product</h1>
-          <div className="lg:hidden">
-            <ModeToggle />
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => window.history.back()}
+              className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-50 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-full w-9 h-9 flex items-center justify-center transition-colors"
+            >
+              <ChevronLeft className="h-5 w-5" />
+              <span className="sr-only">Go back</span>
+            </Button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Input Your Data</h1>
           </div>
         </div>
 
@@ -294,26 +304,13 @@ export function ProductForm() {
             />
           </section>
 
-          <div className="h-[200px] rounded-lg overflow-hidden">
+          <div className="h-[200px] rounded-lg overflow-hidden relative z-0">
             <Map />
-          </div>
-
-          <div className="flex justify-center">
-            <Button 
-              size="lg" 
-              className="px-8 bg-teal-600 hover:bg-teal-700 text-white" 
-              onClick={handleCreateProduct}
-            >
-              Create Product
-            </Button>
           </div>
         </div>
       </div>
 
-      <div className="w-full lg:w-80">
-        <div className="hidden lg:flex justify-end mb-6">
-          <ModeToggle />
-        </div>
+      <div className="w-full lg:w-80 order-2 lg:order-none">
         <div className="space-y-6">
           <Card className="p-6">
           <SectionTitle className="mb-4">
@@ -401,6 +398,30 @@ export function ProductForm() {
               </div>
             </div>
           </Card>
+        </div>
+      </div>
+
+      <div className="order-last w-full lg:hidden">
+        <div className="flex justify-center mt-6">
+          <Button 
+            size="lg" 
+            className="px-8 bg-teal-600 hover:bg-teal-700 text-white w-full sm:w-auto" 
+            onClick={handleCreateProduct}
+          >
+            Create Product
+          </Button>
+        </div>
+      </div>
+
+      <div className="hidden lg:block">
+        <div className="flex justify-center mt-6">
+          <Button 
+            size="lg" 
+            className="px-8 bg-teal-600 hover:bg-teal-700 text-white" 
+            onClick={handleCreateProduct}
+          >
+            Create Product
+          </Button>
         </div>
       </div>
 

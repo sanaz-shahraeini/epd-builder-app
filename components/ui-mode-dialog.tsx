@@ -1,7 +1,7 @@
 'use client'
 
 import { X, MonitorDot, Blocks } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
 import { toast } from "sonner"
@@ -27,26 +27,15 @@ export function UIModeDialog({ open, onOpenChange }: UIModeDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl font-semibold">Choose Your UI Mode</DialogTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 rounded-md"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </Button>
-          </div>
-          <p className="text-gray-600 mt-2">
-            Select how you would like to enter your data manually.
-          </p>
-        </DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-6">
+          <DialogTitle className="text-2xl font-semibold">Choose Your UI Mode</DialogTitle>
+        </div>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Select how you would like to enter your data manually.
+        </p>
 
-        <div className="grid md:grid-cols-2 gap-6 mt-6">
+        <div className="grid md:grid-cols-2 gap-6">
           <button
             onClick={() => handleModeSelect('phase-base')}
             className="group relative flex flex-col items-center text-left border rounded-lg p-6 hover:border-teal-600 hover:shadow-lg transition-all"

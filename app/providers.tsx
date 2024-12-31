@@ -13,8 +13,7 @@ export function Providers({ children }: ProvidersProps) {
     <ErrorBoundary>
       <ThemeProvider
         attribute="class"
-        defaultTheme="system"
-        enableSystem
+        defaultTheme="light"
         disableTransitionOnChange
       >
         {children}
