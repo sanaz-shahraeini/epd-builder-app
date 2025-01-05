@@ -1,14 +1,24 @@
+'use client'
+
 import Link from "next/link"
+import { useRouter, usePathname } from "next/navigation"
 import { BarChart2, FileText, Settings, Search, MessageSquare, LogOut, Menu } from 'lucide-react'
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
+import { useTranslations } from 'next-intl'
+import { signOut } from "next-auth/react"
 
-export function Sidebar() {
+
+interface SidebarProps {
+  className?: string;
+}
+
+export function Sidebar({ className }: SidebarProps) {
   return (
     <>
-      {/* Mobile Menu Trigger */}
-      <div className="fixed top-4 right-4 flex items-center gap-2 md:hidden">
+      {/* Mobile Menu */}
+      <div className={`fixed top-4 right-4 flex items-center gap-2 md:hidden ${className}`}>
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -16,15 +26,23 @@ export function Sidebar() {
               <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
-            <SidebarContent />
+          <SheetContent side="left" className="w-64 p-0 bg-white dark:bg-black border-r dark:border-gray-800">
+            <div className="flex h-full flex-col">
+              <div className="p-6">
+                <img src="/assets/images/logo.png" alt="TerraNEXT" className="h-8" />
+              </div>
+              <SidebarContent />
+            </div>
           </SheetContent>
         </Sheet>
         <ModeToggle />
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:block w-64 h-screen bg-white dark:bg-black border-r dark:border-gray-800 flex-col fixed">
+      <div className={`hidden md:block w-64 h-screen bg-white dark:bg-black border-r dark:border-gray-800 flex-col fixed ${className}`}>
+        <div className="p-6">
+          <img src="/assets/images/logo.png" alt="TerraNEXT" className="h-8" />
+        </div>
         <SidebarContent />
       </div>
     </>
@@ -33,70 +51,122 @@ export function Sidebar() {
 
 // Extract sidebar content to a separate component for reuse
 function SidebarContent() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const n = useTranslations('navigation')
+
+  const isLinkActive = (path: string) => {
+    if (!pathname) return false;
+    
+    // Map German paths to their English equivalents for checking
+    const germanToEnglishPaths = {
+      '/dashboard/posteingang': '/dashboard/inbox',
+      '/dashboard/profil': '/dashboard/profile'
+    };
+
+    // Get the current path without locale prefix
+    const currentPath = pathname.replace(/^\/[a-z]{2}/, '');
+    
+    if (path === '/dashboard/profile') {
+      // Consider both profile and inbox (and their German equivalents) as part of administrative section
+      return currentPath.includes('/dashboard/profile') || 
+             currentPath.includes('/dashboard/inbox') ||
+             currentPath.includes('/dashboard/profil') ||
+             currentPath.includes('/dashboard/posteingang');
+    }
+
+    // Check if current path matches either English or German version
+    return currentPath === path || 
+           currentPath === germanToEnglishPaths[path as keyof typeof germanToEnglishPaths] ||
+           Object.entries(germanToEnglishPaths).find(([de, en]) => 
+             (currentPath.includes(de) && path.includes(en)) || 
+             (currentPath.includes(en) && path.includes(de))
+           ) !== undefined;
+  };
+
+  const getLinkClassName = (path: string) => {
+    const baseClasses = "flex items-center space-x-3 px-3 py-2 rounded-lg"
+    const isActive = isLinkActive(path)
+    
+    return `${baseClasses} ${
+      isActive
+        ? "text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-black"
+        : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"
+    }`
+  }
+
+  const handleLogout = async () => {
+    try {
+      await signOut({ 
+        redirect: true, 
+        callbackUrl: '/signin' 
+      });
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Optionally show an error toast or message
+    }
+  };
+
   return (
     <>
-      <div className="hidden md:block p-6">
-        <img src="/assets/images/logo.png" alt="TerraNEXT" className="h-8" />
-      </div>
-      
       <div className="p-4 flex items-center space-x-3">
-        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-          <span className="text-gray-600">👤</span>
+        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center">
+          <span className="text-gray-600 dark:text-gray-400">👤</span>
         </div>
         <div>
-          <div className="font-medium dark:text-gray-100">User name</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">Company name</div>
+          <div className="font-medium text-gray-900 dark:text-gray-100">{n('userName')}</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">{n('companyName')}</div>
         </div>
       </div>
 
       <nav className="flex-1 p-4">
         <div className="space-y-2">
           <Link 
-            href="#" 
-            className="flex items-center space-x-3 px-3 py-2 text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950 rounded-lg"
+            href="/dashboard/product-portfolio" 
+            className={getLinkClassName('/dashboard/product-portfolio')}
           >
             <BarChart2 className="h-5 w-5" />
-            <span>Product Portfolio</span>
+            <span>{n('productPortfolio')}</span>
           </Link>
           <Link 
-            href="#" 
-            className="flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+            href="/dashboard/project-management" 
+            className={getLinkClassName('/dashboard/project-management')}
           >
             <FileText className="h-5 w-5" />
-            <span>Project Management</span>
+            <span>{n('projectManagement')}</span>
           </Link>
           <Link 
-            href="#" 
-            className="flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+            href="/dashboard/profile" 
+            className={getLinkClassName('/dashboard/profile')}
           >
             <Settings className="h-5 w-5" />
-            <span>Administrative</span>
+            <span>{n('administrative')}</span>
           </Link>
           <Link 
-            href="#" 
-            className="flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+            href="/dashboard/epd-preview" 
+            className={getLinkClassName('/dashboard/epd-preview')}
           >
             <Search className="h-5 w-5" />
-            <span>EPD preview</span>
+            <span>{n('epdPreview')}</span>
           </Link>
           <Link 
             href="#" 
-            className="flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+            className={getLinkClassName('/dashboard/requests')}
           >
             <MessageSquare className="h-5 w-5" />
-            <span>Requests</span>
-            <span className="ml-auto bg-teal-100 text-teal-600 text-xs px-2 py-0.5 rounded-full">2</span>
+            <span>{n('requests')}</span>
+            <span className="ml-auto bg-teal-100 dark:bg-black text-teal-600 dark:text-teal-400 text-xs px-2 py-0.5 rounded-full">2</span>
           </Link>
         </div>
 
         <div className="absolute bottom-4 left-4 right-4">
-          <Link 
-            href="#" 
-            className="flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg"
           >
             <LogOut className="h-5 w-5" />
-            <span>Log out</span>
-          </Link>
+            <span>{n('logout')}</span>
+          </button>
         </div>
       </nav>
     </>

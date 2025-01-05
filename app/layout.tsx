@@ -1,28 +1,42 @@
-import type { Metadata } from "next"
+import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { Providers } from "./providers"
-import "./globals.css"
-import '@radix-ui/themes/styles.css';
+import './globals.css'
+import { Providers } from './providers'
+import { getServerSession } from 'next-auth'
+import { nextAuthOptions } from './api/auth/[...nextauth]/route'
+import { getMessages } from 'next-intl/server'
 
-const inter = Inter({ subsets: ["latin"] })
+const defaultLocale = 'en';
+
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "TerraNEXT - Product Creation",
-  description: "Create and manage your products",
+  title: 'EPD Builder',
+  description: 'Create and manage Environmental Product Declarations',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params: { locale }
 }: {
   children: React.ReactNode
+  params: { locale: string }
 }) {
+  // Ensure locale is always set, default to 'en' if not provided
+  const safeLocale = locale || defaultLocale;
+  
+  const session = await getServerSession(nextAuthOptions);
+  const messages = await getMessages();
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={safeLocale} suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers>
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            {children}
-          </div>
+        <Providers 
+          session={session} 
+          messages={messages}
+          locale={safeLocale}
+        >
+          {children}
         </Providers>
       </body>
     </html>

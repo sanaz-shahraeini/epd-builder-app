@@ -25,11 +25,6 @@ const nextConfig = {
     parallelServerBuildTraces: true,
   },
   webpack: (config) => {
-    config.module.rules.push({
-      test: /\.json$/,
-      loader: 'json-loader',
-      type: 'javascript/auto'
-    });
     return config;
   }
 }

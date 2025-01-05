@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Upload, Package2, Info, ChevronDown, ChevronUp, Plus, HelpCircle, MapPin, Factory, Trash2, Zap, Brain, FileCheck, Settings, Menu, Lightbulb, BarChart2, FileText, LogOut, MessageSquare, Search, ChevronLeft } from 'lucide-react'
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { ModeToggle } from "@/components/mode-toggle"
 import {
   Dialog,
@@ -21,6 +20,9 @@ import { useRouter } from 'next/navigation'
 import { SectionHeader } from './section-header'
 import { SectionTitle } from './section-title'
 import Link from 'next/link'
+import { LanguageSwitcher } from "./language-switcher"
+import { useTranslations } from "next-intl"
+
 
 const Map = dynamic(() => import('./map'), { ssr: false })
 
@@ -31,12 +33,16 @@ interface Material {
   unit: 'g' | 'kg'
 }
 
-export function ProductForm() {
+export default function ProductForm() {
   const router = useRouter()
   const [files, setFiles] = useState<{ image?: File; document?: File }>({})
   const [isWeightSummaryOpen, setIsWeightSummaryOpen] = useState(false)
   const [materials, setMaterials] = useState<Material[]>([])
   const [showNextSteps, setShowNextSteps] = useState(false)
+  const [productName, setProductName] = useState('')
+  const [projectName, setProjectName] = useState('')
+  const [weight, setWeight] = useState('')
+  const [errors, setErrors] = useState<{ productName?: string; projectName?: string; weight?: string }>({});
 
   const handleFileUpload = (type: 'image' | 'document') => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -46,7 +52,9 @@ export function ProductForm() {
   }
 
   const handleCreateProduct = () => {
-    setShowNextSteps(true)
+    if (validateForm()) {
+      setShowNextSteps(true)
+    }
   }
 
   const handleNextStepClick = (path: string) => {
@@ -82,6 +90,18 @@ export function ProductForm() {
     }, 0)
   }
 
+  const validateForm = () => {
+    let newErrors: { productName?: string; projectName?: string; weight?: string } = {};
+    if (!productName) newErrors.productName = 'Product name is required.';
+    if (!projectName) newErrors.projectName = 'Project name is required.';
+    if (!weight) newErrors.weight = 'Weight is required.';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const t = useTranslations('ProductForm')
+
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       <div className="flex-1">
@@ -93,55 +113,67 @@ export function ProductForm() {
             className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-50 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 rounded-full w-9 h-9 flex items-center justify-center transition-colors"
           >
             <ChevronLeft className="h-5 w-5" />
-            <span className="sr-only">Go back</span>
+            <span className="sr-only">{t('goBack')}</span>
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Input Your Data</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('createNewProduct')}</h1>
         </div>
 
         <div className="space-y-8">
           <section>
             <SectionHeader 
               icon={Info} 
-              title="Basic Information" 
+              title={t('basicInformation')} 
               className="mb-6 text-teal-600"
             />
             <div className="grid sm:grid-cols-2 gap-6">
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Product Name*</label>
-                <Input placeholder="Enter product name" />
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">{t('productName')}*</label>
+                <Input 
+                  placeholder={t('enterProductName')} 
+                  required 
+                  onChange={(e) => setProductName(e.target.value)} 
+                />
+                {errors.productName && <p className="text-red-500 text-sm">{errors.productName}</p>}
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Project Name*</label>
-                <Select>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">{t('projectName')}*</label>
+                <Select 
+                  required 
+                  onValueChange={(value) => setProjectName(value)}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select project" />
+                    <SelectValue placeholder={t('selectProject')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="project1">Project 1</SelectItem>
-                    <SelectItem value="project2">Project 2</SelectItem>
+                    <SelectItem value="project1">{t('project1')}</SelectItem>
+                    <SelectItem value="project2">{t('project2')}</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.projectName && <p className="text-red-500 text-sm">{errors.projectName}</p>}
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Weight*</label>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">{t('weight')}*</label>
                 <div className="flex gap-2">
-               
-                  <Input placeholder="Enter weight" />
-                  <Select defaultValue="kg">
+                  <Input 
+                    placeholder={t('enterWeight')} 
+                    required 
+                    onChange={(e) => setWeight(e.target.value)} 
+                  />
+                  <Select defaultValue="kg" required>
                     <SelectTrigger className="w-24">
-                      <SelectValue placeholder="Unit" />
+                      <SelectValue placeholder={t('unit')} />
                     </SelectTrigger>
-                    
                     <SelectContent>
                       <SelectItem value="kg">kg</SelectItem>
                       <SelectItem value="g">g</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+                {errors.weight && <p className="text-red-500 text-sm">{errors.weight}</p>}
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Dimension (optional)</label>
-                <Input placeholder="1x1x1 cm" />
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">{t('dimension')} (optional)</label>
+                <Input placeholder={t('1x1x1 cm')} />
               </div>
             </div>
           </section>
@@ -151,7 +183,7 @@ export function ProductForm() {
           <section>
             <SectionHeader 
               icon={Package2} 
-              title="Product Packaging" 
+              title={t('productPackaging')} 
               className="mb-6 font-bold"
             />
             <Button 
@@ -161,22 +193,22 @@ export function ProductForm() {
               className="text-teal-600 border-teal-600 hover:bg-teal-50 bg-teal-50"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Material
+              {t('addMaterial')}
             </Button>
 
             <div className="mt-4 space-y-4">
               {materials.map((material) => (
                 <div key={material.id} className="grid sm:grid-cols-4 items-end gap-4">
                   <div>
-                    <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block font-semibold">Material Name*</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block font-semibold">{t('materialName')}*</label>
                     <Input
-                      placeholder="Enter material name"
+                      placeholder={t('enterMaterialName')}
                       value={material.name}
                       onChange={(e) => updateMaterial(material.id, { name: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block font-semibold">Quantity*</label>
+                    <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block font-semibold">{t('quantity')}*</label>
                     <div className="flex gap-2">
                       <Input
                         type="number"
@@ -222,26 +254,25 @@ export function ProductForm() {
                 ) : (
                   <ChevronDown className="w-4 h-4" />
                 )}
-                {isWeightSummaryOpen ? 'Hide' : 'Show'} Weight Summary
+                {isWeightSummaryOpen ? t('hide') : t('show')} {t('weightSummary')}
               </button>
 
               {isWeightSummaryOpen && (
                 <div className="mt-4 space-y-4 bg-gray-50 rounded-lg p-6">
-                  <h3 className="text-base font-medium text-teal-600">Weight Calculations</h3>
-                  
+                  <h3 className="text-base font-medium text-teal-600">{t('weightCalculations')}</h3>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span>Packaging Weight:</span>
+                      <span>{t('packagingWeight')}:</span>
                       <span>{calculateTotalWeight().toFixed(2)} g</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Product Weight:</span>
+                      <span>{t('productWeight')}:</span>
                       <span>0.00 g</span>
                     </div>
                   </div>
 
                   <div className="flex justify-between bg-teal-500 text-white p-4 rounded-lg">
-                    <span className="font-medium">Total Weight:</span>
+                    <span className="font-medium">{t('totalWeight')}:</span>
                     <span>{calculateTotalWeight().toFixed(2)} g</span>
                   </div>
                 </div>
@@ -254,15 +285,15 @@ export function ProductForm() {
           <section>
             <SectionHeader 
               icon={MapPin} 
-              title="Production Plant" 
+              title={t('productionPlant')} 
               className="mb-6"
             />
             <div className="grid sm:grid-cols-2 gap-6">
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Supplier Country*</label>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">{t('supplierCountry')}*</label>
                 <Select>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select country" />
+                    <SelectValue placeholder={t('selectCountry')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="spain">Spain</SelectItem>
@@ -271,16 +302,16 @@ export function ProductForm() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">Product Lifetime*</label>
+                <label className="text-sm text-gray-600 dark:text-gray-300 font-semibold">{t('productLifetime')}*</label>
                 <div className="flex gap-2">
-                  <Input placeholder="Enter lifetime" />
+                  <Input placeholder={t('enterLifetime')} />
                   <Select defaultValue="year">
                     <SelectTrigger className="w-24">
-                      <SelectValue placeholder="Unit" />
+                      <SelectValue placeholder={t('selectUnit')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="year">Year</SelectItem>
-                      <SelectItem value="month">Month</SelectItem>
+                      <SelectItem value="year">{t('year')}</SelectItem>
+                      <SelectItem value="month">{t('month')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -293,11 +324,11 @@ export function ProductForm() {
           <section>
             <SectionHeader 
               icon={Factory} 
-              title="Technical Information & Description" 
+              title={t('technicalInformation')} 
               className="mb-6"
             />
             <Textarea 
-              placeholder="Enter product description"
+              placeholder={t('enterProductDescription')}
               className="h-[150px]"
             />
           </section>
@@ -313,7 +344,7 @@ export function ProductForm() {
               className="px-8 bg-teal-600 hover:bg-teal-700 text-white" 
               onClick={handleCreateProduct}
             >
-              Create Product
+              {t('createProduct')}
             </Button>
           </div>
         </div>
@@ -322,6 +353,7 @@ export function ProductForm() {
       {/* Right sidebar */}
       <div className="w-full lg:w-80 order-2 lg:order-none">
         <div className="flex justify-end mb-6">
+        <LanguageSwitcher />
           <ModeToggle />
         </div>
         
@@ -329,7 +361,7 @@ export function ProductForm() {
           {/* Product Image Card */}
           <Card className="p-6">
           <SectionTitle className="mb-4">
-          Product Image
+          {t('productImage')}
           </SectionTitle>
             <div
               className="border-2 border-dashed rounded-lg p-6 text-center"
@@ -342,13 +374,13 @@ export function ProductForm() {
             >
               <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
               <p className="text-sm text-gray-500 mb-2">
-                Drag and drop your product image here
+                {t('dragAndDropImage')}
               </p>
               <button
                 onClick={() => handleBrowseClick('image-upload')}
                 className="text-sm text-teal-600 hover:text-teal-700"
               >
-                or browse to choose a file
+                {t('orBrowse')}
               </button>
               <input
                 id="image-upload"
@@ -363,7 +395,7 @@ export function ProductForm() {
           {/* Product Document Card */}
           <Card className="p-6 w-full lg:w-80">
           <SectionTitle className="mb-4">
-          Product Document
+          {t('productDocument')}
           </SectionTitle>
            
             <div
@@ -377,13 +409,13 @@ export function ProductForm() {
             >
               <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
               <p className="text-sm text-gray-500 mb-2">
-                Drag and drop your document here
+                {t('dragAndDropDocument')}
               </p>
               <button
                 onClick={() => handleBrowseClick('document-upload')}
                 className="text-sm text-teal-600 hover:text-teal-700"
               >
-                or browse to choose a file
+                {t('orBrowse')}
               </button>
               <input
                 id="document-upload"
@@ -401,16 +433,16 @@ export function ProductForm() {
             <HelpCircle className="w-5 h-5 text-teal-600 flex-shrink-0 mt-1" />
               <div>
               <SectionTitle className="mb-4">
-          Need Help?
+          {t('needHelp')}
           </SectionTitle>
                 <p className="text-sm text-gray-500 mb-4">
-                  Our support team is here to assist you with any questions about the EPD creation process.
+                  {t('supportTeam')}
                 </p>
                 <Button 
                   variant="outline" 
                   className="w-full bg-teal-600 hover:bg-teal-700 text-white"
                 >
-                  Ask Questions
+                  {t('askQuestions')}
                 </Button>
               </div>
             </div>
@@ -426,7 +458,7 @@ export function ProductForm() {
             className="w-full sm:w-auto px-8 bg-teal-600 hover:bg-teal-700 text-white" 
             onClick={handleCreateProduct}
           >
-            Create Product
+            {t('createProduct')}
           </Button>
         </div>
       </div>
@@ -437,7 +469,7 @@ export function ProductForm() {
           className="sm:max-w-md fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full max-w-md"
         >
           <DialogHeader>
-            <DialogTitle className="text-center">Choose Your LCA Method</DialogTitle>
+            <DialogTitle className="text-center">{t('chooseYourLCA')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 pt-4">
             <Button
@@ -447,8 +479,8 @@ export function ProductForm() {
             >
               <Zap className="h-5 w-5 text-teal-600" />
               <div className="text-left">
-                <div className="font-semibold">Fast LCA</div>
-                <div className="text-sm text-gray-500">Quick assessment with basic inputs</div>
+                <div className="font-semibold">{t('fastLCA')}</div>
+                <div className="text-sm text-gray-500">{t('quickAssessment')}</div>
               </div>
             </Button>
             <Button
@@ -458,19 +490,19 @@ export function ProductForm() {
             >
               <Brain className="h-5 w-5 text-teal-600" />
               <div className="text-left">
-                <div className="font-semibold">Intelligent LCA</div>
-                <div className="text-sm text-gray-500">AI-powered detailed assessment</div>
+                <div className="font-semibold">{t('intelligentLCA')}</div>
+                <div className="text-sm text-gray-500">{t('aiPoweredAssessment')}</div>
               </div>
             </Button>
             <Button
               variant="outline"
               className="w-full justify-start gap-2 h-14"
-              onClick={() => handleNextStepClick('/input-data')}
+              onClick={() => handleNextStepClick('/dashboard/input-data')}
             >
               <FileCheck className="h-5 w-5 text-teal-600" />
               <div className="text-left">
-                <div className="font-semibold">EPD Builder</div>
-                <div className="text-sm text-gray-500">Create and manage EPD documents</div>
+                <div className="font-semibold">{t('epdBuilder')}</div>
+                <div className="text-sm text-gray-500">{t('manageEPD')}</div>
               </div>
             </Button>
             <Button
@@ -480,8 +512,8 @@ export function ProductForm() {
             >
               <Settings className="h-5 w-5 text-teal-600" />
               <div className="text-left">
-                <div className="font-semibold">Optimizer LCA</div>
-                <div className="text-sm text-gray-500">Optimize your product's environmental impact</div>
+                <div className="font-semibold">{t('optimizerLCA')}</div>
+                <div className="text-sm text-gray-500">{t('optimizeEnvironmentalImpact')}</div>
               </div>
             </Button>
           </div>

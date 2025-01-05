@@ -1,24 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Modal,
-  Tabs,
-  Tab,
-  Paper,
-  CircularProgress,
-  Alert,
-  InputAdornment,
-  IconButton,
-} from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import GoogleIcon from '@mui/icons-material/Google';
-import SuccessModal from './SuccessModal';
-import debounce from 'lodash.debounce';
+"use client";
+
+import { useState, useEffect } from "react";
+import { useFormik } from "formik";
+import * as yup from "yup";
+import { useTranslations } from "next-intl";
+import { FaGoogle } from "react-icons/fa";
+import { 
+  IoMailOutline, 
+  IoBusinessOutline, 
+  IoBriefcaseOutline, 
+  IoCallOutline,
+  IoPersonOutline,
+  IoLocationOutline,
+  IoKeyOutline,
+  IoGridOutline,
+  IoAtCircleOutline
+} from "react-icons/io5";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { signIn } from "next-auth/react";
 
 interface SignUpFormProps {
@@ -28,552 +33,521 @@ interface SignUpFormProps {
   setShowSignUp: (show: boolean) => void;
 }
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-interface Message {
+type Message = {
   text: string;
-  type: 'success' | 'error';
-}
+  type: "error" | "success";
+};
 
-const validationSchema = Yup.object().shape({
-  firstName: Yup.string().required('First name is required'),
-  lastName: Yup.string().required('Last name is required'),
-  email: Yup.string()
-    .required('Email is required')
-    .email('Invalid email address'),
-  companyName: Yup.string().when('userType', {
-    is: (val: string) => val === 'company',
-    then: () => Yup.string().required('Company name is required'),
-    otherwise: () => Yup.string()
-  }),
-  jobTitle: Yup.string().when('userType', {
-    is: (val: string) => val === 'company',
-    then: () => Yup.string().required('Job title is required'),
-    otherwise: () => Yup.string()
-  }),
-  industry: Yup.string().when('userType', {
-    is: (val: string) => val === 'company',
-    then: () => Yup.string().required('Industry is required'),
-    otherwise: () => Yup.string()
-  }),
-  country: Yup.string().when('userType', {
-    is: (val: string) => val === 'company',
-    then: () => Yup.string().required('Country is required'),
-    otherwise: () => Yup.string()
-  }),
-  phoneNumber: Yup.string().when('userType', {
-    is: (val: string) => val === 'company',
-    then: () => Yup.string()
-      .required('Phone number is required')
-      .matches(/^\+?1?\d{9,15}$/, 'Invalid phone number format'),
-    otherwise: () => Yup.string()
-      .matches(/^\+?1?\d{9,15}$/, 'Invalid phone number format')
-  }),
-  username: Yup.string()
-    .required('Username is required')
-    .min(3, 'Username must be at least 3 characters')
-    .matches(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
-  password: Yup.string()
-    .required('Password is required')
-    .min(8, 'Password must be at least 8 characters')
-    .matches(
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/,
-      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
-    ),
-  confirmPassword: Yup.string()
-    .required('Please confirm your password')
-    .oneOf([Yup.ref('password')], 'Passwords must match'),
-});
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`signup-tabpanel-${index}`}
-      aria-labelledby={`signup-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
-  );
-}
-
-const SignUpForm: React.FC<SignUpFormProps> = ({
-  open,
-  onClose,
-  setShowSignIn,
-  setShowSignUp,
-}) => {
-  const [tabValue, setTabValue] = useState(0);
-  const [loading, setLoading] = useState(false);
+function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormProps) {
+  const t = useTranslations("SignUp");
+  const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("user");
   const [message, setMessage] = useState<Message | null>(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-    setMessage(null);
-    formik.setFieldValue('userType', newValue === 1 ? 'company' : 'regular');
-    formik.resetForm();
+  const validationSchema = {
+    user: yup.object({
+      firstName: yup
+        .string()
+        .trim()
+        .min(2, t("validation.first_name.min"))
+        .max(50, t("validation.first_name.max"))
+        .matches(
+          /^[a-zA-Z\s-']+$/,
+          t("validation.first_name.matches")
+        )
+        .required(t("validation.first_name.required")),
+      lastName: yup
+        .string()
+        .trim()
+        .min(2, t("validation.last_name.min"))
+        .max(50, t("validation.last_name.max"))
+        .matches(
+          /^[a-zA-Z\s-']+$/,
+          t("validation.last_name.matches")
+        )
+        .required(t("validation.last_name.required")),
+      username: yup
+        .string()
+        .trim()
+        .min(3, t("validation.username.min"))
+        .max(50, t("validation.username.max"))
+        .required(t("validation.username.required")),
+      email: yup
+        .string()
+        .email(t("validation.email.invalid"))
+        .required(t("validation.email.required")),
+      password: yup
+        .string()
+        .min(8, t("validation.password.min"))
+        .matches(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
+          t("validation.password.matches")
+        )
+        .required(t("validation.password.required")),
+      confirmPassword: yup
+        .string()
+        .oneOf([yup.ref('password')], t("validation.confirmPassword.mustMatch"))
+        .required(t("validation.confirmPassword.required")),
+      companyName: yup
+        .string()
+        .trim()
+        .min(2, t("validation.company_name.min"))
+        .max(100, t("validation.company_name.max"))
+        .required(t("validation.company_name.required")),
+      jobTitle: yup
+        .string()
+        .trim()
+        .min(2, t("validation.job_title.min"))
+        .max(50, t("validation.job_title.max"))
+        .required(t("validation.job_title.required")),
+      industry: yup
+        .string()
+        .trim()
+        .min(2, t("validation.industry.min"))
+        .max(50, t("validation.industry.max"))
+        .required(t("validation.industry.required")),
+      country: yup
+        .string()
+        .trim()
+        .min(2, t("validation.country.min"))
+        .max(50, t("validation.country.max"))
+        .required(t("validation.country.required")),
+      phoneNumber: yup
+        .string()
+        .trim()
+        .matches(
+          /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/,
+          t("validation.phone_number.matches")
+        )
+        .required(t("validation.phone_number.required")),
+    }),
+    company: yup.object({
+      firstName: yup
+        .string()
+        .trim()
+        .min(2, t("validation.first_name.min"))
+        .max(50, t("validation.first_name.max"))
+        .matches(
+          /^[a-zA-Z\s-']+$/,
+          t("validation.first_name.matches")
+        )
+        .required(t("validation.first_name.required")),
+      lastName: yup
+        .string()
+        .trim()
+        .min(2, t("validation.last_name.min"))
+        .max(50, t("validation.last_name.max"))
+        .matches(
+          /^[a-zA-Z\s-']+$/,
+          t("validation.last_name.matches")
+        )
+        .required(t("validation.last_name.required")),
+      username: yup
+        .string()
+        .trim()
+        .min(3, t("validation.username.min"))
+        .max(50, t("validation.username.max"))
+        .required(t("validation.username.required")),
+      email: yup
+        .string()
+        .email(t("validation.email.invalid"))
+        .required(t("validation.email.required")),
+      password: yup
+        .string()
+        .min(8, t("validation.password.min"))
+        .matches(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
+          t("validation.password.matches")
+        )
+        .required(t("validation.password.required")),
+      confirmPassword: yup
+        .string()
+        .oneOf([yup.ref('password')], t("validation.confirmPassword.mustMatch"))
+        .required(t("validation.confirmPassword.required")),
+      companyName: yup
+        .string()
+        .trim()
+        .min(2, t("validation.company_name.min"))
+        .max(100, t("validation.company_name.max"))
+        .required(t("validation.company_name.required")),
+      jobTitle: yup
+        .string()
+        .trim()
+        .min(2, t("validation.job_title.min"))
+        .max(50, t("validation.job_title.max"))
+        .required(t("validation.jobTitle.required")),
+      industry: yup
+        .string()
+        .trim()
+        .min(2, t("validation.industry.min"))
+        .max(50, t("validation.industry.max"))
+        .required(t("validation.industry.required")),
+      country: yup
+        .string()
+        .trim()
+        .min(2, t("validation.country.min"))
+        .max(50, t("validation.country.max"))
+        .required(t("validation.country.required")),
+      phoneNumber: yup
+        .string()
+        .trim()
+        .matches(
+          /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/,
+          t("validation.phone_number.matches")
+        )
+        .required(t("validation.phone_number.required")),
+    }),
   };
 
-  const handleSignUp = async (values: any) => {
-    setLoading(true);
-    setMessage(null);
-
-    const userType = tabValue === 0 ? 'regular' : 'company';
-    console.log('Current tab value:', tabValue);
-    console.log('User type being sent:', userType);
-
-    try {
-      const requestData = {
-        username: values.username,
-        email: values.email,
-        password: values.password,
-        confirmPassword: values.confirmPassword,
-        first_name: values.firstName,
-        last_name: values.lastName,
-        user_type: userType,  // Changed from userType to user_type to match backend
-        // Only include company-specific fields if user type is company
-        ...(userType === 'company' && {
-          company_name: values.companyName,
-          job_title: values.jobTitle,
-          industry: values.industry,
-          country: values.country,
-          phone_number: values.phoneNumber,
-        }),
-      };
-
-      console.log('Sending signup data:', requestData);
-
-      const response = await fetch('http://localhost:8000/users/signup/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      const data = await response.json();
-      console.log('Signup response:', data);
-
-      if (response.ok) {
-        setShowSuccessModal(true);
-      } else {
-        let errorMessage = '';
-        if (typeof data.error === 'object') {
-          errorMessage = Object.entries(data.error)
-            .map(([key, value]) => {
-              const displayKey = key
-                .split('_')
-                .map((word, index) => 
-                  index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
-                )
-                .join(' ');
-              return `${displayKey}: ${value}`;
-            })
-            .join(', ');
-        } else if (typeof data === 'object') {
-          errorMessage = Object.entries(data)
-            .map(([key, value]) => {
-              const displayKey = key
-                .split('_')
-                .map((word, index) => 
-                  index === 0 ? word : word.charAt(0).toUpperCase() + word.slice(1)
-                )
-                .join(' ');
-              return `${displayKey}: ${value}`;
-            })
-            .join(', ');
-        } else {
-          errorMessage = data.error || 'Registration failed';
-        }
-        setMessage({ text: errorMessage, type: 'error' });
-      }
-    } catch (error) {
-      console.error('Signup error:', error);
-      setMessage({ text: 'Network error occurred', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Debounced username check
-  const debouncedUsernameCheck = React.useCallback(
-    debounce(async (username: string, setFieldError: any) => {
-      if (username.length >= 3) {
-        try {
-          const response = await fetch(`http://localhost:8000/users/check-username/${username}/`);
-          const data = await response.json();
-          if (data.exists) {
-            setFieldError('username', 'Username is already taken');
-          }
-        } catch (error) {
-          console.error('Username check failed:', error);
-        }
-      }
-    }, 500),
-    []
-  );
-
-  // Debounced email check
-  const debouncedEmailCheck = React.useCallback(
-    debounce(async (email: string, setFieldError: any) => {
-      if (email && email.includes('@')) {
-        try {
-          const response = await fetch(`http://localhost:8000/users/check-email/${email}/`);
-          const data = await response.json();
-          if (data.exists) {
-            setFieldError('email', 'Email is already registered');
-          }
-        } catch (error) {
-          console.error('Email check failed:', error);
-        }
-      }
-    }, 500),
-    []
-  );
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setLoading(true);
-      const result = await signIn("google", { callbackUrl: "/dashboard" }); // Adjust the callbackUrl as needed
-      if (!result?.error) {
-        // Handle successful sign-in, maybe redirect or show a success message
-        console.log("Google sign-in successful", result);
-      } else {
-        // Handle error
-        console.error("Google sign-in error", result?.error);
-        setMessage({ text: "Google sign-in failed", type: "error" });
-      }
-    } catch (error) {
-      console.error("Google sign-in error", error);
-      setMessage({
-        text: "An error occurred during Google sign-in",
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formik = useFormik({
+  const userFormik = useFormik({
     initialValues: {
-      firstName: '',
-      lastName: '',
-      email: '',
-      companyName: '',
-      jobTitle: '',
-      industry: '',
-      country: '',
-      phoneNumber: '',
-      username: '',
-      password: '',
-      confirmPassword: '',
-      userType: tabValue === 1 ? 'company' : 'regular',
+      first_name: "",
+      last_name: "",
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      company_name: "",
+      job_title: "",
+      industry: "",
+      country: "",
+      phone_number: "",
     },
-    validationSchema,
-    onSubmit: handleSignUp,
+    validationSchema: validationSchema.user,
+    onSubmit: async (values) => {
+      setLoading(true);
+      try {
+        // Check username availability
+        const usernameResponse = await fetch(`http://localhost:8000/users/check-username/${values.username}/`);
+        if (!usernameResponse.ok) {
+          setMessage({ type: "error", text: t("errors.usernameTaken") });
+          setLoading(false);
+          return;
+        }
+
+        // Check email availability
+        const emailResponse = await fetch(`http://localhost:8000/users/check-email/${values.email}/`);
+        if (!emailResponse.ok) {
+          setMessage({ type: "error", text: t("errors.emailRegistered") });
+          setLoading(false);
+          return;
+        }
+
+        // Submit signup form
+        const response = await fetch("http://localhost:8000/users/signup/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...values,
+            userType: "regular",
+          }),
+        });
+
+        if (response.ok) {
+          setMessage({ type: "success", text: t("success.registrationComplete") });
+          setTimeout(() => {
+            onClose();
+            setShowSignIn(true);
+          }, 2000);
+        } else {
+          const data = await response.json();
+          setMessage({ type: "error", text: data.message || t("errors.registrationFailed") });
+        }
+      } catch (error) {
+        setMessage({ type: "error", text: t("errors.generalError") });
+      }
+      setLoading(false);
+    },
   });
 
-  // Add field-level validation
-  useEffect(() => {
-    if (formik.values.username) {
-      debouncedUsernameCheck(formik.values.username, formik.setFieldError);
-    }
-    if (formik.values.email) {
-      debouncedEmailCheck(formik.values.email, formik.setFieldError);
-    }
-  }, [formik.values.username, formik.values.email]);
+  const companyFormik = useFormik({
+    initialValues: {
+      first_name: "",
+      last_name: "",
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      company_name: "",
+      job_title: "",
+      industry: "",
+      country: "",
+      phone_number: "",
+    },
+    validationSchema: validationSchema.company,
+    onSubmit: async (values) => {
+      setLoading(true);
+      try {
+        // Check username availability
+        const usernameResponse = await fetch(`http://localhost:8000/users/check-username/${values.username}/`);
+        if (!usernameResponse.ok) {
+          setMessage({ type: "error", text: t("errors.usernameTaken") });
+          setLoading(false);
+          return;
+        }
 
-  const handleSignInClick = () => {
-    setShowSignUp(false);
-    setShowSignIn(true);
+        // Check email availability
+        const emailResponse = await fetch(`http://localhost:8000/users/check-email/${values.email}/`);
+        if (!emailResponse.ok) {
+          setMessage({ type: "error", text: t("errors.emailRegistered") });
+          setLoading(false);
+          return;
+        }
+
+        // Submit signup form
+        const response = await fetch("http://localhost:8000/users/signup/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...values,
+            userType: "company",
+          }),
+        });
+
+        if (response.ok) {
+          setMessage({ type: "success", text: t("success.registrationComplete") });
+          setTimeout(() => {
+            onClose();
+            setShowSignIn(true);
+          }, 2000);
+        } else {
+          const data = await response.json();
+          setMessage({ type: "error", text: data.message || t("errors.registrationFailed") });
+        }
+      } catch (error) {
+        setMessage({ type: "error", text: t("errors.generalError") });
+      }
+      setLoading(false);
+    },
+  });
+
+  const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>, formik: any) => {
+    const username = e.target.value;
+    formik.handleChange(e);
+
+    if (username.length >= 3) {
+      setIsCheckingUsername(true);
+      try {
+        const response = await fetch(`http://localhost:8000/users/check-username/${username}/`);
+        if (!response.ok) {
+          formik.setFieldError("username", t("validation.username.taken"));
+        }
+      } catch (error) {
+        console.error("Error checking username:", error);
+      }
+      setIsCheckingUsername(false);
+    }
   };
 
-  const commonFields = [
-    { name: 'firstName', label: 'First Name' },
-    { name: 'lastName', label: 'Last Name' },
-    { name: 'email', label: 'Email Address' },
-    { name: 'companyName', label: 'Company Name' },
-    { name: 'jobTitle', label: 'Job Title' },
-    { name: 'industry', label: 'Industry' },
-    { name: 'country', label: 'Country' },
-    { name: 'phoneNumber', label: 'Phone Number' },
-    { name: 'username', label: 'Username' },
-  ];
+  const handleEmailChange = async (e: React.ChangeEvent<HTMLInputElement>, formik: any) => {
+    const email = e.target.value;
+    formik.handleChange(e);
 
-  const renderTextField = (name: string, label: string) => (
-    <TextField
-      fullWidth
-      id={name}
-      name={name}
-      label={label}
-      type={name === 'password' ? (showPassword ? 'text' : 'password') : 
-           name === 'confirmPassword' ? (showConfirmPassword ? 'text' : 'password') : 
-           'text'}
-      variant="outlined"
-      margin="normal"
-      value={formik.values[name]}
-      onChange={formik.handleChange}
-      onBlur={formik.handleBlur}
-      error={formik.touched[name] && Boolean(formik.errors[name])}
-      helperText={formik.touched[name] && formik.errors[name]}
-      disabled={loading}
-      InputProps={{
-        ...(name === 'password' && {
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle password visibility"
-                onClick={() => setShowPassword(!showPassword)}
-                edge="end"
-              >
-                {showPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }),
-        ...(name === 'confirmPassword' && {
-          endAdornment: (
-            <InputAdornment position="end">
-              <IconButton
-                aria-label="toggle confirm password visibility"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                edge="end"
-              >
-                {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-              </IconButton>
-            </InputAdornment>
-          ),
-        }),
-      }}
-      sx={{
-        mb: 2,
-        "& .MuiOutlinedInput-root": {
-          borderRadius: 1.5,
-          "&:hover fieldset": {
-            borderColor: "#42B7B0",
-          },
-        },
-        "& .Mui-focused .MuiOutlinedInput-notchedOutline": {
-          borderColor: "#42B7B0 !important",
-        },
-        "& .MuiInputLabel-root.Mui-focused": {
-          color: "#42B7B0",
-        },
-      }}
-    />
+    if (email && email.includes("@")) {
+      setIsCheckingEmail(true);
+      try {
+        const response = await fetch(`http://localhost:8000/users/check-email/${email}`);
+        if (!response.ok) {
+          formik.setFieldError("email", t("validation.email.registered"));
+        }
+      } catch (error) {
+        console.error("Error checking email:", error);
+      }
+      setIsCheckingEmail(false);
+    }
+  };
+
+  const renderField = (formik: any, name: string, label: string, type: string = "text", icon: React.ReactNode) => (
+    <div className="space-y-2">
+      <Label htmlFor={name}>{label}</Label>
+      <div className="relative">
+        <Input
+          id={name}
+          name={name}
+          type={type}
+          onChange={name === "username" ? (e) => handleUsernameChange(e, formik) : 
+                   name === "email" ? (e) => handleEmailChange(e, formik) :
+                   formik.handleChange}
+          onBlur={formik.handleBlur}
+          value={formik.values[name]}
+          className={cn(
+            "pl-10",
+            formik.touched[name] && formik.errors[name] ? "border-red-500" : ""
+          )}
+        />
+        <div className="absolute left-3 top-3 h-5 w-5 text-gray-400">
+          {icon}
+        </div>
+      </div>
+      {formik.touched[name] && formik.errors[name] && (
+        <div className="text-sm text-red-500">{formik.errors[name]}</div>
+      )}
+    </div>
   );
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
+
   return (
-    <>
-      <Modal
-        open={open}
-        onClose={onClose}
-        aria-labelledby="signup-modal"
-        aria-describedby="signup-form">
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: "90%",
-            maxWidth: 450,
-            bgcolor: "#fff",
-            borderRadius: 2,
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
-            p: 4,
-            color: "#1B4242",
-            maxHeight: "90vh",
-            overflowY: "auto",
-            "&::-webkit-scrollbar": {
-              width: "8px",
-            },
-            "&::-webkit-scrollbar-track": {
-              background: "#f1f1f1",
-              borderRadius: "4px",
-            },
-            "&::-webkit-scrollbar-thumb": {
-              background: "#42B7B0",
-              borderRadius: "4px",
-              "&:hover": {
-                background: "#3AA19B",
-              },
-            },
-          }}>
-          <Typography 
-            variant="h4" 
-            component="h2" 
-            align="center" 
-            sx={{ 
-              mb: 4,
-              fontWeight: 600,
-              background: 'linear-gradient(45deg, #42B7B0, #1B4242)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent'
-            }}>
-            Create Account
-          </Typography>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[425px] p-0 max-h-[90vh] overflow-hidden">
+        <div className="px-6 py-6 space-y-6">
+          <div className="text-center space-y-2">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center">
+                <IoPersonOutline className="w-6 h-6 text-teal-600" />
+              </div>
+            </div>
+            <DialogTitle className="text-2xl font-semibold tracking-tight">
+              {t("title")}
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {t("description")}
+            </p>
+          </div>
 
           {message && (
             <Alert
-              severity={message.type}
-              sx={{ 
-                mb: 3,
-                borderRadius: 1.5,
-                '& .MuiAlert-icon': {
-                  fontSize: '1.5rem'
-                }
-              }}
-              onClose={() => setMessage(null)}>
-              {message.text}
+              variant={message.type === "error" ? "destructive" : "default"}
+              className={cn(
+                "border-l-4",
+                message.type === "error"
+                  ? "border-l-red-500"
+                  : "border-l-teal-600"
+              )}
+            >
+              <AlertDescription>{message.text}</AlertDescription>
             </Alert>
           )}
 
-          <Paper 
-            sx={{ 
-              borderRadius: 2,
-              overflow: "hidden",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)"
-            }}>
-            <Tabs
-              value={tabValue}
-              onChange={handleTabChange}
-              variant="fullWidth"
-              sx={{
-                borderBottom: "1px solid rgba(0, 0, 0, 0.08)",
-                ".MuiTab-root": {
-                  color: "#666",
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  py: 2,
-                  "&.Mui-selected": {
-                    color: "#42B7B0",
-                    fontWeight: 600,
-                  },
-                },
-                ".MuiTabs-indicator": {
-                  backgroundColor: "#42B7B0",
-                  height: 3,
-                },
-              }}>
-              <Tab label="Regular User" />
-              <Tab label="Company User" />
-            </Tabs>
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 sticky top-0 bg-background z-10">
+              <TabsTrigger value="user" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700">
+                {t("regular_user")}
+              </TabsTrigger>
+              <TabsTrigger value="company" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700">
+                {t("company_user")}
+              </TabsTrigger>
+            </TabsList>
 
-            <form onSubmit={formik.handleSubmit}>
-              <Box sx={{ px: 3, pb: 3 }}>
-                {commonFields.map((field) =>
-                  renderTextField(field.name, field.label)
-                )}
+            <div className="overflow-y-auto max-h-[calc(90vh-400px)] mt-4">
+              <TabsContent value="user" className="space-y-4">
+                <form onSubmit={userFormik.handleSubmit} className="space-y-4">
+                  {renderField(userFormik, "first_name", t("first_name"), "text", <IoPersonOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "last_name", t("last_name"), "text", <IoPersonOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "username", t("username"), "text", <IoAtCircleOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "email", t("email"), "email", <IoMailOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "company_name", t("company_name"), "text", <IoBusinessOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "job_title", t("job_title"), "text", <IoBriefcaseOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "industry", t("industry"), "text", <IoGridOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "country", t("country"), "text", <IoLocationOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "phone_number", t("phone_number"), "tel", <IoCallOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "password", t("password"), "password", <IoKeyOutline className="text-teal-500" />)}
+                  {renderField(userFormik, "confirmPassword", t("confirmPassword"), "password", <IoKeyOutline className="text-teal-500" />)}
 
-                {renderTextField("password", "Password")}
-                {renderTextField("confirmPassword", "Confirm Password")}
-
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  disabled={loading || !formik.isValid}
-                  sx={{
-                    mt: 2,
-                    mb: 2,
-                    py: 1.5,
-                    borderRadius: 1.5,
-                    textTransform: "none",
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                    background: "linear-gradient(45deg, #42B7B0, #3AA19B)",
-                    boxShadow: "0 4px 12px rgba(66, 183, 176, 0.2)",
-                    "&:hover": {
-                      background: "linear-gradient(45deg, #3AA19B, #1B4242)",
-                      boxShadow: "0 6px 16px rgba(66, 183, 176, 0.3)",
-                    },
-                    "&.Mui-disabled": {
-                      bgcolor: "#A5D3D1",
-                    },
-                  }}>
-                  {loading ? (
-                    <CircularProgress size={24} color="inherit" />
-                  ) : (
-                    "Sign up"
-                  )}
-                </Button>
-
-                {tabValue === 0 && (
                   <Button
-                    fullWidth
-                    variant="outlined"
-                    startIcon={<GoogleIcon />}
-                    onClick={handleGoogleSignIn}
+                    type="submit"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
                     disabled={loading}
-                    sx={{
-                      py: 1.5,
-                      borderRadius: 1.5,
-                      textTransform: "none",
-                      fontSize: "1rem",
-                      bgcolor: "#fff",
-                      color: "#42B7B0",
-                      borderColor: "#42B7B0",
-                      borderWidth: "2px",
-                      "&:hover": {
-                        bgcolor: "rgba(66, 183, 176, 0.05)",
-                        borderColor: "#3AA19B",
-                        borderWidth: "2px",
-                      },
-                      mb: 2,
-                    }}>
-                    Continue with Google
+                  >
+                    {loading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>{t("creatingAccount")}</span>
+                      </div>
+                    ) : (
+                      t("createAccount")
+                    )}
                   </Button>
-                )}
-              </Box>
-            </form>
-          </Paper>
+                </form>
+              </TabsContent>
 
-          <Box sx={{ textAlign: "center", mt: 3 }}>
-            <Typography variant="body2" sx={{ color: "#666" }}>
-              Already have an account?{" "}
-              <Button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleSignInClick();
-                }}
-                sx={{
-                  padding: "4px 8px",
-                  fontSize: "inherit",
-                  color: "#42B7B0",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  "&:hover": {
-                    color: "#3AA19B",
-                    background: "rgba(66, 183, 176, 0.05)",
-                  },
-                }}>
-                Log in
-              </Button>
-            </Typography>
-          </Box>
-        </Box>
-      </Modal>
+              <TabsContent value="company" className="space-y-4">
+                <form onSubmit={companyFormik.handleSubmit} className="space-y-4">
+                  {renderField(companyFormik, "first_name", t("first_name"), "text", <IoPersonOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "last_name", t("last_name"), "text", <IoPersonOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "username", t("username"), "text", <IoAtCircleOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "email", t("email"), "email", <IoMailOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "company_name", t("company_name"), "text", <IoBusinessOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "job_title", t("job_title"), "text", <IoBriefcaseOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "industry", t("industry"), "text", <IoGridOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "country", t("country"), "text", <IoLocationOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "phone_number", t("phone_number"), "tel", <IoCallOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "password", t("password"), "password", <IoKeyOutline className="text-teal-500" />)}
+                  {renderField(companyFormik, "confirmPassword", t("confirmPassword"), "password", <IoKeyOutline className="text-teal-500" />)}
 
-      <SuccessModal
-        open={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        message="Your account has been created successfully! You can now sign in to access your account."
-        onSignIn={handleSignInClick}
-      />
-    </>
+                  <Button
+                    type="submit"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>{t("creatingAccount")}</span>
+                      </div>
+                    ) : (
+                      t("createAccount")
+                    )}
+                  </Button>
+                </form>
+              </TabsContent>
+            </div>
+          </Tabs>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                {t("continueWithGoogle")}
+              </span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-teal-600 hover:bg-teal-50 hover:text-teal-600"
+            onClick={() => signIn("google")}
+          >
+            <FaGoogle className="mr-2 h-4 w-4 text-teal-600" />
+            Google
+          </Button>
+
+          <div className="text-center text-sm">
+            <span className="text-muted-foreground">
+              {t("alreadyAccount")}{" "}
+            </span>
+            <Button
+              type="button"
+              variant="link"
+              className="p-0 h-auto text-teal-600 hover:underline"
+              onClick={() => {
+                setShowSignUp(false);
+                setShowSignIn(true);
+              }}
+            >
+              {t("signIn")}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
-};
+}
 
 export default SignUpForm;

@@ -2,7 +2,7 @@
 
 import { X, MonitorDot, Blocks } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+
 import { useRouter } from 'next/navigation'
 import { toast } from "sonner"
 
@@ -22,7 +22,7 @@ export function UIModeDialog({ open, onOpenChange }: UIModeDialogProps) {
       return
     }
     onOpenChange(false)
-    router.push(`/manual-entry/${mode}`)
+    router.push(`/dashboard/manual-entry/${mode}`)
   }
 
   return (
