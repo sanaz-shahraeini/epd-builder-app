@@ -332,5 +332,17 @@
       "position": "Position",
       "new": "Neu",
       "addNewUser": "Neuen Benutzer hinzufügen"
+    },
+    "NotFound": {
+      "title": "404 - Seite nicht gefunden",
+      "heading": "Seite nicht gefunden",
+      "description": "Entschuldigung, wir konnten die gesuchte Seite nicht finden. Sie wurde möglicherweise verschoben oder gelöscht.",
+      "goHome": "Zur Startseite",
+      "goBack": "Zurück"
+    },
+    "Error": {
+      "title": "Ups! Etwas ist schief gelaufen",
+      "message": "Keine Sorge, wir kümmern uns darum! Versuchen Sie, die Seite zu aktualisieren oder klicken Sie unten, um es erneut zu versuchen.",
+      "tryAgain": "Erneut versuchen"
     }
 }

@@ -327,5 +327,18 @@
       "new": "New",
       "addNewUser": "Add New User"
     },
-    "epdPreview": "EPD Preview"
+    "epdPreview": "EPD Preview",
+    "NotFound": {
+      "title": "404 - Page Not Found",
+      "heading": "Page not found",
+      "description": "Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.",
+      "goHome": "Go back home",
+      "goBack": "Previous page"
+    },
+      "Error": {
+    "title": "Oops! Something went wrong",
+    "message": "Don't worry, we're on it! Try refreshing the page or click below to try again.",
+    "tryAgain": "Try Again"
+  
+    }
 }
