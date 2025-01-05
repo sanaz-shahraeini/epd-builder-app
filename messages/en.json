@@ -87,7 +87,6 @@
       "email": "Email",
       "password": "Password",
       "confirm_password": "Confirm Password",
-      "confirmPassword": "Confirm Password",
       "company_name": "Company Name",
       "job_title": "Job Title",
       "industry": "Industry",
@@ -98,6 +97,19 @@
       "continueWithGoogle": "Continue with Google",
       "alreadyAccount": "Already have an account?",
       "signIn": "Sign in",
+      "errors": {
+        "networkError": "A network error occurred. Please try again.",
+        "serverError": "A server error occurred. Please try again.",
+        "usernameTaken": "This username is already taken",
+        "emailRegistered": "This email is already registered",
+        "generalError": "An error occurred. Please try again.",
+        "usernameTaken": "Username is already taken",
+        "emailRegistered": "Email is already registered",
+        "registrationFailed": "Registration failed"
+      },
+      "success": {
+        "registrationComplete": "Registration successful! Redirecting to sign in..."
+      },
       "validation": {
         "first_name": {
           "required": "First name is required",
@@ -131,7 +143,7 @@
           "min": "Password must be at least 8 characters",
           "matches": "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&#)"
         },
-        "confirmPassword": {
+        "confirm_password": {
           "required": "Please confirm your password",
           "mustMatch": "Passwords must match"
         },
@@ -160,14 +172,9 @@
           "matches": "Please enter a valid phone number. Example: +1234567890 or (123) 456-7890"
         }
       },
-      "errors": {
-        "usernameTaken": "Username is already taken",
-        "emailRegistered": "Email is already registered",
-        "registrationFailed": "Registration failed",
-        "generalError": "An error occurred. Please try again"
-      },
-      "success": {
-        "registrationComplete": "Registration successful! Please sign in."
+      "tabs": {
+        "regular": "Regular User",
+        "company": "Company User"
       }
     },
     "ForgotPassword": {

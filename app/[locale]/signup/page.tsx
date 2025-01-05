@@ -28,6 +28,11 @@ const SignUpPage = () => {
     router.push(`/${locale}/signin${callbackUrl ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ''}`);
   };
 
+  const handleShowSignUp = () => {
+    // This function is required by the SignUpForm props but since we're already
+    // on the signup page, we don't need to do anything here
+  };
+
   if (!mounted) {
     return null;
   }
@@ -38,6 +43,7 @@ const SignUpPage = () => {
         open={true}
         onClose={handleClose}
         setShowSignIn={handleSignInClick}
+        setShowSignUp={handleShowSignUp}
       />
     </div>
   );

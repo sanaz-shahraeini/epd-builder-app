@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useFormik } from "formik";
 import * as yup from "yup";
 import { useTranslations } from "next-intl";
@@ -14,7 +14,8 @@ import {
   IoLocationOutline,
   IoKeyOutline,
   IoGridOutline,
-  IoAtCircleOutline
+  IoAtCircleOutline,
+  IoLayersOutline
 } from "react-icons/io5";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { signIn } from "next-auth/react";
+import { checkUsername, checkEmail, signUp } from "@/lib/api/auth";
+import { useRouter } from "@/i18n/navigation";
 
 interface SignUpFormProps {
   open: boolean;
@@ -38,18 +41,93 @@ type Message = {
   type: "error" | "success";
 };
 
+// Define the type for form values
+type FormValues = {
+  first_name: string;
+  last_name: string;
+  username: string;
+  email: string;
+  password: string;
+  confirm_password: string;
+  company_name: string;
+  job_title: string;
+  phone_number: string;
+  industry: string;
+  country: string;
+  address: string;
+};
+
+interface InputFieldProps {
+  name: keyof FormValues;
+  label: string;
+  type?: string;
+  placeholder?: string;
+  icon?: React.ReactNode;
+  formik: ReturnType<typeof useFormik<FormValues>>;
+  isCheckingUsername?: boolean;
+  isCheckingEmail?: boolean;
+}
+
+const InputField: React.FC<InputFieldProps> = ({ 
+  name, 
+  label, 
+  type = "text", 
+  icon, 
+  formik,
+  isCheckingUsername,
+  isCheckingEmail 
+}) => (
+  <div className="space-y-2">
+    <Label htmlFor={name}>{label}</Label>
+    <div className="relative">
+      <Input
+        id={name}
+        name={name}
+        type={type}
+        value={formik.values[name]}
+        onChange={formik.handleChange}
+        onBlur={formik.handleBlur}
+        className={cn(
+          "pl-10",
+          formik.touched[name] && formik.errors[name] ? "border-red-500" : ""
+        )}
+      />
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        {icon}
+      </div>
+      {((name === 'username' && isCheckingUsername) || (name === 'email' && isCheckingEmail)) && (
+        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+          <svg className="animate-spin h-5 w-5 text-teal-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+      )}
+    </div>
+    {formik.touched[name] && formik.errors[name] && (
+      <div className="text-sm text-red-500 mt-1">
+        {formik.errors[name] as string}
+      </div>
+    )}
+  </div>
+);
+
 function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormProps) {
+  const router = useRouter();
   const t = useTranslations("SignUp");
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("user");
+  const [activeTab, setActiveTab] = useState<'regular' | 'company'>('regular');
   const [message, setMessage] = useState<Message | null>(null);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const validationSchema = {
-    user: yup.object({
-      firstName: yup
+  // Define valid tab types
+  type TabType = 'regular' | 'company';
+
+  const validationSchema: Record<TabType, yup.ObjectSchema<any>> = {
+    regular: yup.object({
+      first_name: yup
         .string()
         .trim()
         .min(2, t("validation.first_name.min"))
@@ -59,7 +137,7 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
           t("validation.first_name.matches")
         )
         .required(t("validation.first_name.required")),
-      lastName: yup
+      last_name: yup
         .string()
         .trim()
         .min(2, t("validation.last_name.min"))
@@ -87,22 +165,77 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
           t("validation.password.matches")
         )
         .required(t("validation.password.required")),
-      confirmPassword: yup
+      confirm_password: yup
         .string()
-        .oneOf([yup.ref('password')], t("validation.confirmPassword.mustMatch"))
-        .required(t("validation.confirmPassword.required")),
-      companyName: yup
+        .oneOf([yup.ref('password')], t("validation.confirm_password.mustMatch"))
+        .required(t("validation.confirm_password.required")),
+      company_name: yup.string().optional(),
+      job_title: yup.string().optional(),
+      phone_number: yup.string().optional(),
+      industry: yup.string().optional(),
+      country: yup.string().optional()
+    }),
+    company: yup.object({
+      first_name: yup
+        .string()
+        .trim()
+        .min(2, t("validation.first_name.min"))
+        .max(50, t("validation.first_name.max"))
+        .matches(
+          /^[a-zA-Z\s-']+$/,
+          t("validation.first_name.matches")
+        )
+        .required(t("validation.first_name.required")),
+      last_name: yup
+        .string()
+        .trim()
+        .min(2, t("validation.last_name.min"))
+        .max(50, t("validation.last_name.max"))
+        .matches(
+          /^[a-zA-Z\s-']+$/,
+          t("validation.last_name.matches")
+        )
+        .required(t("validation.last_name.required")),
+      username: yup
+        .string()
+        .trim()
+        .min(3, t("validation.username.min"))
+        .max(50, t("validation.username.max"))
+        .required(t("validation.username.required")),
+      email: yup
+        .string()
+        .email(t("validation.email.invalid"))
+        .required(t("validation.email.required")),
+      password: yup
+        .string()
+        .min(8, t("validation.password.min"))
+        .matches(
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
+          t("validation.password.matches")
+        )
+        .required(t("validation.password.required")),
+      confirm_password: yup
+        .string()
+        .oneOf([yup.ref('password')], t("validation.confirm_password.mustMatch"))
+        .required(t("validation.confirm_password.required")),
+      company_name: yup
         .string()
         .trim()
         .min(2, t("validation.company_name.min"))
         .max(100, t("validation.company_name.max"))
         .required(t("validation.company_name.required")),
-      jobTitle: yup
+      job_title: yup
         .string()
         .trim()
         .min(2, t("validation.job_title.min"))
         .max(50, t("validation.job_title.max"))
         .required(t("validation.job_title.required")),
+      phone_number: yup
+        .string()
+        .matches(
+          /^(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/,
+          t("validation.phone_number.matches")
+        ),
       industry: yup
         .string()
         .trim()
@@ -115,282 +248,168 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
         .min(2, t("validation.country.min"))
         .max(50, t("validation.country.max"))
         .required(t("validation.country.required")),
-      phoneNumber: yup
-        .string()
-        .trim()
-        .matches(
-          /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/,
-          t("validation.phone_number.matches")
-        )
-        .required(t("validation.phone_number.required")),
-    }),
-    company: yup.object({
-      firstName: yup
-        .string()
-        .trim()
-        .min(2, t("validation.first_name.min"))
-        .max(50, t("validation.first_name.max"))
-        .matches(
-          /^[a-zA-Z\s-']+$/,
-          t("validation.first_name.matches")
-        )
-        .required(t("validation.first_name.required")),
-      lastName: yup
-        .string()
-        .trim()
-        .min(2, t("validation.last_name.min"))
-        .max(50, t("validation.last_name.max"))
-        .matches(
-          /^[a-zA-Z\s-']+$/,
-          t("validation.last_name.matches")
-        )
-        .required(t("validation.last_name.required")),
-      username: yup
-        .string()
-        .trim()
-        .min(3, t("validation.username.min"))
-        .max(50, t("validation.username.max"))
-        .required(t("validation.username.required")),
-      email: yup
-        .string()
-        .email(t("validation.email.invalid"))
-        .required(t("validation.email.required")),
-      password: yup
-        .string()
-        .min(8, t("validation.password.min"))
-        .matches(
-          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
-          t("validation.password.matches")
-        )
-        .required(t("validation.password.required")),
-      confirmPassword: yup
-        .string()
-        .oneOf([yup.ref('password')], t("validation.confirmPassword.mustMatch"))
-        .required(t("validation.confirmPassword.required")),
-      companyName: yup
-        .string()
-        .trim()
-        .min(2, t("validation.company_name.min"))
-        .max(100, t("validation.company_name.max"))
-        .required(t("validation.company_name.required")),
-      jobTitle: yup
-        .string()
-        .trim()
-        .min(2, t("validation.job_title.min"))
-        .max(50, t("validation.job_title.max"))
-        .required(t("validation.jobTitle.required")),
-      industry: yup
-        .string()
-        .trim()
-        .min(2, t("validation.industry.min"))
-        .max(50, t("validation.industry.max"))
-        .required(t("validation.industry.required")),
-      country: yup
-        .string()
-        .trim()
-        .min(2, t("validation.country.min"))
-        .max(50, t("validation.country.max"))
-        .required(t("validation.country.required")),
-      phoneNumber: yup
-        .string()
-        .trim()
-        .matches(
-          /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/,
-          t("validation.phone_number.matches")
-        )
-        .required(t("validation.phone_number.required")),
     }),
   };
 
-  const userFormik = useFormik({
+  const formik = useFormik<FormValues>({
     initialValues: {
-      first_name: "",
-      last_name: "",
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      company_name: "",
-      job_title: "",
-      industry: "",
-      country: "",
-      phone_number: "",
+      first_name: '',
+      last_name: '',
+      username: '',
+      email: '',
+      password: '',
+      confirm_password: '',
+      company_name: '',
+      job_title: '',
+      phone_number: '',
+      industry: '',
+      country: '',
+      address: ''
     },
-    validationSchema: validationSchema.user,
+    enableReinitialize: false,
+    validateOnChange: false,
+    validateOnBlur: true,
+    validationSchema: validationSchema[activeTab],
     onSubmit: async (values) => {
-      setLoading(true);
       try {
-        // Check username availability
-        const usernameResponse = await fetch(`http://localhost:8000/users/check-username/${values.username}/`);
-        if (!usernameResponse.ok) {
-          setMessage({ type: "error", text: t("errors.usernameTaken") });
-          setLoading(false);
+        setLoading(true);
+        setMessage(null);
+
+        // Check username and email availability
+        const [usernameAvailable, emailAvailable] = await Promise.all([
+          checkUsername(values.username),
+          checkEmail(values.email)
+        ]);
+
+        if (!usernameAvailable) {
+          setMessage({ type: 'error', text: t('errors.usernameTaken') });
           return;
         }
 
-        // Check email availability
-        const emailResponse = await fetch(`http://localhost:8000/users/check-email/${values.email}/`);
-        if (!emailResponse.ok) {
-          setMessage({ type: "error", text: t("errors.emailRegistered") });
-          setLoading(false);
+        if (!emailAvailable) {
+          setMessage({ type: 'error', text: t('errors.emailRegistered') });
           return;
         }
 
-        // Submit signup form
-        const response = await fetch("http://localhost:8000/users/signup/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...values,
-            userType: "regular",
-          }),
-        });
+        // Submit signup data
+        const { confirm_password, ...signUpData } = values;
+        
+        // For regular users, only send the necessary fields
+        const dataToSend = activeTab === 'regular' 
+          ? {
+              first_name: signUpData.first_name,
+              last_name: signUpData.last_name,
+              username: signUpData.username,
+              email: signUpData.email,
+              password: signUpData.password,
+              user_type: activeTab
+            }
+          : {
+              ...signUpData,
+              user_type: activeTab
+            };
+        
+        await signUp(dataToSend);
 
-        if (response.ok) {
-          setMessage({ type: "success", text: t("success.registrationComplete") });
-          setTimeout(() => {
-            onClose();
-            setShowSignIn(true);
-          }, 2000);
-        } else {
-          const data = await response.json();
-          setMessage({ type: "error", text: data.message || t("errors.registrationFailed") });
-        }
+        // Show success message
+        setMessage({ type: 'success', text: t('success.registrationComplete') });
+
+        // Redirect to signin
+        setTimeout(() => {
+          setShowSignIn(true);
+        }, 2000);
       } catch (error) {
-        setMessage({ type: "error", text: t("errors.generalError") });
+        console.error('Signup error:', error);
+        setMessage({ 
+          type: 'error', 
+          text: t('errors.serverError')
+        });
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    },
+    }
   });
 
-  const companyFormik = useFormik({
-    initialValues: {
-      first_name: "",
-      last_name: "",
-      username: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-      company_name: "",
-      job_title: "",
-      industry: "",
-      country: "",
-      phone_number: "",
-    },
-    validationSchema: validationSchema.company,
-    onSubmit: async (values) => {
-      setLoading(true);
-      try {
-        // Check username availability
-        const usernameResponse = await fetch(`http://localhost:8000/users/check-username/${values.username}/`);
-        if (!usernameResponse.ok) {
-          setMessage({ type: "error", text: t("errors.usernameTaken") });
-          setLoading(false);
-          return;
-        }
-
-        // Check email availability
-        const emailResponse = await fetch(`http://localhost:8000/users/check-email/${values.email}/`);
-        if (!emailResponse.ok) {
-          setMessage({ type: "error", text: t("errors.emailRegistered") });
-          setLoading(false);
-          return;
-        }
-
-        // Submit signup form
-        const response = await fetch("http://localhost:8000/users/signup/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...values,
-            userType: "company",
-          }),
-        });
-
-        if (response.ok) {
-          setMessage({ type: "success", text: t("success.registrationComplete") });
-          setTimeout(() => {
-            onClose();
-            setShowSignIn(true);
-          }, 2000);
-        } else {
-          const data = await response.json();
-          setMessage({ type: "error", text: data.message || t("errors.registrationFailed") });
-        }
-      } catch (error) {
-        setMessage({ type: "error", text: t("errors.generalError") });
-      }
-      setLoading(false);
-    },
-  });
-
-  const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>, formik: any) => {
-    const username = e.target.value;
-    formik.handleChange(e);
-
-    if (username.length >= 3) {
-      setIsCheckingUsername(true);
-      try {
-        const response = await fetch(`http://localhost:8000/users/check-username/${username}/`);
-        if (!response.ok) {
-          formik.setFieldError("username", t("validation.username.taken"));
-        }
-      } catch (error) {
-        console.error("Error checking username:", error);
-      }
-      setIsCheckingUsername(false);
+  const handleTabChange = (value: string) => {
+    if (value === 'regular' || value === 'company') {
+      setActiveTab(value as TabType);
     }
   };
 
-  const handleEmailChange = async (e: React.ChangeEvent<HTMLInputElement>, formik: any) => {
-    const email = e.target.value;
-    formik.handleChange(e);
-
-    if (email && email.includes("@")) {
-      setIsCheckingEmail(true);
-      try {
-        const response = await fetch(`http://localhost:8000/users/check-email/${email}`);
-        if (!response.ok) {
-          formik.setFieldError("email", t("validation.email.registered"));
+  // Debounced username check
+  useEffect(() => {
+    let isActive = true; // For handling race conditions
+    const timer = setTimeout(async () => {
+      const username = formik.values.username;
+      if (username && username.length >= 3 && !formik.errors.username) {
+        setIsCheckingUsername(true);
+        try {
+          const available = await checkUsername(username);
+          if (isActive) {
+            if (!available) {
+              formik.setFieldError('username', t('errors.usernameTaken'));
+            } else {
+              // Clear the error if username is available
+              formik.setFieldError('username', undefined);
+            }
+          }
+        } catch (error) {
+          console.error('Username check failed:', error);
+          // Only set error if component is still mounted
+          if (isActive) {
+            // Don't set username taken error for network or server errors
+            if (error instanceof Error && error.message.includes('HTTP error')) {
+              formik.setFieldError('username', t('errors.networkError'));
+            } else if (error instanceof Error && error.message.includes('Invalid response')) {
+              formik.setFieldError('username', t('errors.serverError'));
+            }
+          }
+        } finally {
+          if (isActive) {
+            setIsCheckingUsername(false);
+          }
         }
-      } catch (error) {
-        console.error("Error checking email:", error);
       }
-      setIsCheckingEmail(false);
-    }
-  };
+    }, 500);
 
-  const renderField = (formik: any, name: string, label: string, type: string = "text", icon: React.ReactNode) => (
-    <div className="space-y-2">
-      <Label htmlFor={name}>{label}</Label>
-      <div className="relative">
-        <Input
-          id={name}
-          name={name}
-          type={type}
-          onChange={name === "username" ? (e) => handleUsernameChange(e, formik) : 
-                   name === "email" ? (e) => handleEmailChange(e, formik) :
-                   formik.handleChange}
-          onBlur={formik.handleBlur}
-          value={formik.values[name]}
-          className={cn(
-            "pl-10",
-            formik.touched[name] && formik.errors[name] ? "border-red-500" : ""
-          )}
-        />
-        <div className="absolute left-3 top-3 h-5 w-5 text-gray-400">
-          {icon}
-        </div>
-      </div>
-      {formik.touched[name] && formik.errors[name] && (
-        <div className="text-sm text-red-500">{formik.errors[name]}</div>
-      )}
-    </div>
-  );
+    return () => {
+      isActive = false;
+      clearTimeout(timer);
+    };
+  }, [formik.values.username]);
+
+  // Debounced email check
+  useEffect(() => {
+    let isActive = true; // For handling race conditions
+    const timer = setTimeout(async () => {
+      const email = formik.values.email;
+      if (email && !formik.errors.email) {
+        setIsCheckingEmail(true);
+        try {
+          const available = await checkEmail(email);
+          if (isActive) {
+            if (!available) {
+              formik.setFieldError('email', t('errors.emailRegistered'));
+            } else {
+              // Clear the error if email is available
+              formik.setFieldError('email', undefined);
+            }
+          }
+        } catch (error) {
+          console.error('Email check failed:', error);
+        } finally {
+          if (isActive) {
+            setIsCheckingEmail(false);
+          }
+        }
+      }
+    }, 500);
+
+    return () => {
+      isActive = false;
+      clearTimeout(timer);
+    };
+  }, [formik.values.email]);
 
   useEffect(() => {
     setMounted(true);
@@ -419,11 +438,11 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
           </div>
 
           {message && (
-            <Alert
+            <Alert 
               variant={message.type === "error" ? "destructive" : "default"}
               className={cn(
                 "border-l-4",
-                message.type === "error"
+                message.type === "error" 
                   ? "border-l-red-500"
                   : "border-l-teal-600"
               )}
@@ -432,78 +451,146 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
             </Alert>
           )}
 
-          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs defaultValue={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2 sticky top-0 bg-background z-10">
-              <TabsTrigger value="user" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700">
-                {t("regular_user")}
+              <TabsTrigger 
+                value="regular" 
+                className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700"
+              >
+                {t("tabs.regular")}
               </TabsTrigger>
-              <TabsTrigger value="company" className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700">
-                {t("company_user")}
+              <TabsTrigger 
+                value="company" 
+                className="data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700"
+              >
+                {t("tabs.company")}
               </TabsTrigger>
             </TabsList>
 
             <div className="overflow-y-auto max-h-[calc(90vh-400px)] mt-4">
-              <TabsContent value="user" className="space-y-4">
-                <form onSubmit={userFormik.handleSubmit} className="space-y-4">
-                  {renderField(userFormik, "first_name", t("first_name"), "text", <IoPersonOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "last_name", t("last_name"), "text", <IoPersonOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "username", t("username"), "text", <IoAtCircleOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "email", t("email"), "email", <IoMailOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "company_name", t("company_name"), "text", <IoBusinessOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "job_title", t("job_title"), "text", <IoBriefcaseOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "industry", t("industry"), "text", <IoGridOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "country", t("country"), "text", <IoLocationOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "phone_number", t("phone_number"), "tel", <IoCallOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "password", t("password"), "password", <IoKeyOutline className="text-teal-500" />)}
-                  {renderField(userFormik, "confirmPassword", t("confirmPassword"), "password", <IoKeyOutline className="text-teal-500" />)}
-
-                  <Button
-                    type="submit"
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>{t("creatingAccount")}</span>
-                      </div>
-                    ) : (
-                      t("createAccount")
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="company" className="space-y-4">
-                <form onSubmit={companyFormik.handleSubmit} className="space-y-4">
-                  {renderField(companyFormik, "first_name", t("first_name"), "text", <IoPersonOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "last_name", t("last_name"), "text", <IoPersonOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "username", t("username"), "text", <IoAtCircleOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "email", t("email"), "email", <IoMailOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "company_name", t("company_name"), "text", <IoBusinessOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "job_title", t("job_title"), "text", <IoBriefcaseOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "industry", t("industry"), "text", <IoGridOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "country", t("country"), "text", <IoLocationOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "phone_number", t("phone_number"), "tel", <IoCallOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "password", t("password"), "password", <IoKeyOutline className="text-teal-500" />)}
-                  {renderField(companyFormik, "confirmPassword", t("confirmPassword"), "password", <IoKeyOutline className="text-teal-500" />)}
-
-                  <Button
-                    type="submit"
-                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>{t("creatingAccount")}</span>
-                      </div>
-                    ) : (
-                      t("createAccount")
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
+              <form onSubmit={formik.handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField 
+                    name="first_name" 
+                    label={t("first_name")} 
+                    type="text" 
+                    icon={<IoPersonOutline className="text-teal-500" />}
+                    formik={formik}
+                    isCheckingUsername={isCheckingUsername}
+                    isCheckingEmail={isCheckingEmail}
+                  />
+                  <InputField 
+                    name="last_name" 
+                    label={t("last_name")} 
+                    type="text" 
+                    icon={<IoPersonOutline className="text-teal-500" />}
+                    formik={formik}
+                    isCheckingUsername={isCheckingUsername}
+                    isCheckingEmail={isCheckingEmail}
+                  />
+                </div>
+                <InputField 
+                  name="username" 
+                  label={t("username")} 
+                  type="text" 
+                  icon={<IoAtCircleOutline className="text-teal-500" />}
+                  formik={formik}
+                  isCheckingUsername={isCheckingUsername}
+                  isCheckingEmail={isCheckingEmail}
+                />
+                <InputField 
+                  name="email" 
+                  label={t("email")} 
+                  type="email" 
+                  icon={<IoMailOutline className="text-teal-500" />}
+                  formik={formik}
+                  isCheckingUsername={isCheckingUsername}
+                  isCheckingEmail={isCheckingEmail}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField 
+                    name="password" 
+                    label={t("password")} 
+                    type="password" 
+                    icon={<IoKeyOutline className="text-teal-500" />}
+                    formik={formik}
+                    isCheckingUsername={isCheckingUsername}
+                    isCheckingEmail={isCheckingEmail}
+                  />
+                  <InputField 
+                    name="confirm_password" 
+                    label={t("confirm_password")} 
+                    type="password" 
+                    icon={<IoKeyOutline className="text-teal-500" />}
+                    formik={formik}
+                    isCheckingUsername={isCheckingUsername}
+                    isCheckingEmail={isCheckingEmail}
+                  />
+                </div>
+                <InputField 
+                  name="company_name" 
+                  label={t("company_name")} 
+                  type="text" 
+                  icon={<IoBusinessOutline className="text-teal-500" />}
+                  formik={formik}
+                  isCheckingUsername={isCheckingUsername}
+                  isCheckingEmail={isCheckingEmail}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField 
+                    name="industry" 
+                    label={t("industry")} 
+                    type="text" 
+                    icon={<IoLayersOutline className="text-teal-500" />}
+                    formik={formik}
+                    isCheckingUsername={isCheckingUsername}
+                    isCheckingEmail={isCheckingEmail}
+                  />
+                  <InputField 
+                    name="country" 
+                    label={t("country")} 
+                    type="text" 
+                    icon={<IoLocationOutline className="text-teal-500" />}
+                    formik={formik}
+                    isCheckingUsername={isCheckingUsername}
+                    isCheckingEmail={isCheckingEmail}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField 
+                    name="job_title" 
+                    label={t("job_title")} 
+                    type="text" 
+                    icon={<IoBriefcaseOutline className="text-teal-500" />}
+                    formik={formik}
+                    isCheckingUsername={isCheckingUsername}
+                    isCheckingEmail={isCheckingEmail}
+                  />
+                  <InputField 
+                    name="phone_number" 
+                    label={t("phone_number")} 
+                    type="tel" 
+                    icon={<IoCallOutline className="text-teal-500" />}
+                    formik={formik}
+                    isCheckingUsername={isCheckingUsername}
+                    isCheckingEmail={isCheckingEmail}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                  disabled={loading || isCheckingUsername || isCheckingEmail}
+                >
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>{t("creatingAccount")}</span>
+                    </div>
+                  ) : (
+                    t("createAccount")
+                  )}
+                </Button>
+              </form>
             </div>
           </Tabs>
 
@@ -536,10 +623,8 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
               type="button"
               variant="link"
               className="p-0 h-auto text-teal-600 hover:underline"
-              onClick={() => {
-                setShowSignUp(false);
-                setShowSignIn(true);
-              }}
+              onClick={() => setShowSignIn(true)}
+              disabled={loading}
             >
               {t("signIn")}
             </Button>
