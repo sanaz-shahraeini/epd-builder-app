@@ -343,6 +343,7 @@
     "Error": {
       "title": "Ups! Etwas ist schief gelaufen",
       "message": "Keine Sorge, wir kümmern uns darum! Versuchen Sie, die Seite zu aktualisieren oder klicken Sie unten, um es erneut zu versuchen.",
-      "tryAgain": "Erneut versuchen"
+      "tryAgain": "Erneut versuchen",
+      "goBack": "Zurück"
     }
 }

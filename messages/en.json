@@ -57,6 +57,22 @@
       "emailNotVerified": "Please verify your email address before signing in",
       "usernameRequired": "Username is required",
       "passwordRequired": "Password is required",
+      "errors": {
+        "networkError": "Network error occurred",
+        "regularUser": "Regular User",
+        "companyUser": "Company User",
+        "invalidCredentials": "Invalid username or password",
+        "signInWithEmail": "Sign in with Email",
+        "signInWithPassword": "Sign in with Password",
+        "submit": "Sign In",
+        "switchToEmail": "Use email verification instead",
+        "switchToPassword": "Use password instead",
+        "authMethodTitle": "Choose Sign In Method",
+        "emailNotVerified": "Please verify your email address before signing in",
+        "usernameRequired": "Username is required",
+        "passwordRequired": "Password is required",
+        "unknown": "An unexpected error occurred. Please try again."
+      },
       "validation": {
         "username": {
           "required": "Username is required"
@@ -338,7 +354,8 @@
       "Error": {
     "title": "Oops! Something went wrong",
     "message": "Don't worry, we're on it! Try refreshing the page or click below to try again.",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try Again",
+    "goBack": "Go back"
   
     }
 }
