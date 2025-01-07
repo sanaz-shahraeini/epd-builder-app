@@ -345,5 +345,21 @@
       "message": "Keine Sorge, wir kümmern uns darum! Versuchen Sie, die Seite zu aktualisieren oder klicken Sie unten, um es erneut zu versuchen.",
       "tryAgain": "Erneut versuchen",
       "goBack": "Zurück"
+    },
+    "MessageView": {
+      "reply": "Antworten",
+      "forward": "Weiterleiten",
+      "attach": "Anhängen",
+      "send": "Senden",
+      "typePlaceholder": "Hier eingeben",
+      "today": "Heute",
+      "productFastLCA": "Schnelle Ökobilanz"
+    },
+    "MessageList": {
+      "unread": "Ungelesen",
+      "new": "Neu",
+      "today": "Heute",
+      "yesterday": "Gestern",
+      "subject": "Betreff"
     }
 }

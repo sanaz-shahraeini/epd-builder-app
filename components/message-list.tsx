@@ -1,27 +1,30 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useTranslations } from 'next-intl'
 
 export function MessageList() {
+  const t = useTranslations('MessageList')
+
   const messages = [
     {
       id: 1,
       user: "User name 05",
-      subject: "Subject",
+      subject: t('subject'),
       isNew: true,
-      date: "Today"
+      date: t('today')
     },
     {
       id: 2,
       user: "User name 05",
-      subject: "Subject",
+      subject: t('subject'),
       isNew: false,
-      date: "Yesterday"
+      date: t('yesterday')
     }
   ]
 
   return (
     <div className="w-[400px] border-r">
       <div className="p-4">
-        <h3 className="font-semibold mb-4">Unread</h3>
+        <h3 className="font-semibold mb-4">{t('unread')}</h3>
         <div className="space-y-2">
           {messages.map((message) => (
             <div
@@ -38,7 +41,7 @@ export function MessageList() {
                 <div className="flex justify-between">
                   <h4 className="font-medium">{message.user}</h4>
                   {message.isNew && (
-                    <span className="text-green-600 text-sm">New</span>
+                    <span className="text-green-600 text-sm">{t('new')}</span>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">{message.subject}</p>
@@ -50,4 +53,3 @@ export function MessageList() {
     </div>
   )
 }
-

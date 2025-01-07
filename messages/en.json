@@ -357,5 +357,21 @@
     "tryAgain": "Try Again",
     "goBack": "Go back"
   
+    },
+    "MessageView": {
+      "reply": "Reply",
+      "forward": "Forward",
+      "attach": "Attach",
+      "send": "Send",
+      "typePlaceholder": "Type here",
+      "today": "Today",
+      "productFastLCA": "Fast LCA"
+    },
+    "MessageList": {
+      "unread": "Unread",
+      "new": "New",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "subject": "Subject"
     }
 }
