@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://epd-fullstack-project.vercel.app';
     const response = await fetch(`${backendUrl}/users/signin/`, {
       method: 'POST',
       headers: {

@@ -16,7 +16,7 @@ export const nextAuthOptions: NextAuthOptions = {
         }
 
         try {
-          const backendUrl = 'http://localhost:8000/users/signin/';
+          const backendUrl = 'https://epd-fullstack-project.vercel.app/users/signin/';
           const response = await fetch(backendUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
