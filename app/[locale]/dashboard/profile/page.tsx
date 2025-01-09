@@ -11,38 +11,283 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Eye, EyeOff, Camera, Menu } from 'lucide-react'
-import { useTranslations } from 'next-intl'
-import { useState, useEffect } from "react"
-import { ModeToggle } from "@/components/mode-toggle"
-import { Sidebar } from "@/components/sidebar"
-import { LanguageSwitcher } from '@/components/language-switcher';
+import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { useRouter } from '@/i18n/navigation'
+import { getUserProfile, updateUserProfile, type UserProfile } from "@/lib/api/auth"
+import { useToast } from "@/components/ui/use-toast"
+import { useState, useEffect, useRef } from "react"
+import { ModeToggle } from "@/components/mode-toggle"
+import { Sidebar } from "@/components/sidebar"
+import { LanguageSwitcher } from '@/components/language-switcher'
 
 const tabs = ["myEPDs", "inbox", "dataDirectory", "myProfile"] as const
+
+const countries = [
+  { value: "afghanistan", label: "Afghanistan" },
+  { value: "albania", label: "Albania" },
+  { value: "algeria", label: "Algeria" },
+  { value: "andorra", label: "Andorra" },
+  { value: "angola", label: "Angola" },
+  { value: "antigua_and_barbuda", label: "Antigua and Barbuda" },
+  { value: "argentina", label: "Argentina" },
+  { value: "armenia", label: "Armenia" },
+  { value: "australia", label: "Australia" },
+  { value: "austria", label: "Austria" },
+  { value: "azerbaijan", label: "Azerbaijan" },
+  { value: "bahamas", label: "Bahamas" },
+  { value: "bahrain", label: "Bahrain" },
+  { value: "bangladesh", label: "Bangladesh" },
+  { value: "barbados", label: "Barbados" },
+  { value: "belarus", label: "Belarus" },
+  { value: "belgium", label: "Belgium" },
+  { value: "belize", label: "Belize" },
+  { value: "benin", label: "Benin" },
+  { value: "bhutan", label: "Bhutan" },
+  { value: "bolivia", label: "Bolivia" },
+  { value: "bosnia_and_herzegovina", label: "Bosnia and Herzegovina" },
+  { value: "botswana", label: "Botswana" },
+  { value: "brazil", label: "Brazil" },
+  { value: "brunei", label: "Brunei" },
+  { value: "bulgaria", label: "Bulgaria" },
+  { value: "burkina_faso", label: "Burkina Faso" },
+  { value: "burundi", label: "Burundi" },
+  { value: "cambodia", label: "Cambodia" },
+  { value: "cameroon", label: "Cameroon" },
+  { value: "canada", label: "Canada" },
+  { value: "cape_verde", label: "Cape Verde" },
+  { value: "central_african_republic", label: "Central African Republic" },
+  { value: "chad", label: "Chad" },
+  { value: "chile", label: "Chile" },
+  { value: "china", label: "China" },
+  { value: "colombia", label: "Colombia" },
+  { value: "comoros", label: "Comoros" },
+  { value: "congo", label: "Congo" },
+  { value: "costa_rica", label: "Costa Rica" },
+  { value: "croatia", label: "Croatia" },
+  { value: "cuba", label: "Cuba" },
+  { value: "cyprus", label: "Cyprus" },
+  { value: "czech_republic", label: "Czech Republic" },
+  { value: "denmark", label: "Denmark" },
+  { value: "djibouti", label: "Djibouti" },
+  { value: "dominica", label: "Dominica" },
+  { value: "dominican_republic", label: "Dominican Republic" },
+  { value: "east_timor", label: "East Timor" },
+  { value: "ecuador", label: "Ecuador" },
+  { value: "egypt", label: "Egypt" },
+  { value: "el_salvador", label: "El Salvador" },
+  { value: "equatorial_guinea", label: "Equatorial Guinea" },
+  { value: "eritrea", label: "Eritrea" },
+  { value: "estonia", label: "Estonia" },
+  { value: "ethiopia", label: "Ethiopia" },
+  { value: "fiji", label: "Fiji" },
+  { value: "finland", label: "Finland" },
+  { value: "france", label: "France" },
+  { value: "gabon", label: "Gabon" },
+  { value: "gambia", label: "Gambia" },
+  { value: "georgia", label: "Georgia" },
+  { value: "germany", label: "Germany" },
+  { value: "ghana", label: "Ghana" },
+  { value: "greece", label: "Greece" },
+  { value: "grenada", label: "Grenada" },
+  { value: "guatemala", label: "Guatemala" },
+  { value: "guinea", label: "Guinea" },
+  { value: "guinea_bissau", label: "Guinea-Bissau" },
+  { value: "guyana", label: "Guyana" },
+  { value: "haiti", label: "Haiti" },
+  { value: "honduras", label: "Honduras" },
+  { value: "hungary", label: "Hungary" },
+  { value: "iceland", label: "Iceland" },
+  { value: "india", label: "India" },
+  { value: "indonesia", label: "Indonesia" },
+  { value: "iran", label: "Iran" },
+  { value: "iraq", label: "Iraq" },
+  { value: "ireland", label: "Ireland" },
+  { value: "israel", label: "Israel" },
+  { value: "italy", label: "Italy" },
+  { value: "ivory_coast", label: "Ivory Coast" },
+  { value: "jamaica", label: "Jamaica" },
+  { value: "japan", label: "Japan" },
+  { value: "jordan", label: "Jordan" },
+  { value: "kazakhstan", label: "Kazakhstan" },
+  { value: "kenya", label: "Kenya" },
+  { value: "kiribati", label: "Kiribati" },
+  { value: "north_korea", label: "North Korea" },
+  { value: "south_korea", label: "South Korea" },
+  { value: "kuwait", label: "Kuwait" },
+  { value: "kyrgyzstan", label: "Kyrgyzstan" },
+  { value: "laos", label: "Laos" },
+  { value: "latvia", label: "Latvia" },
+  { value: "lebanon", label: "Lebanon" },
+  { value: "lesotho", label: "Lesotho" },
+  { value: "liberia", label: "Liberia" },
+  { value: "libya", label: "Libya" },
+  { value: "liechtenstein", label: "Liechtenstein" },
+  { value: "lithuania", label: "Lithuania" },
+  { value: "luxembourg", label: "Luxembourg" },
+  { value: "macedonia", label: "Macedonia" },
+  { value: "madagascar", label: "Madagascar" },
+  { value: "malawi", label: "Malawi" },
+  { value: "malaysia", label: "Malaysia" },
+  { value: "maldives", label: "Maldives" },
+  { value: "mali", label: "Mali" },
+  { value: "malta", label: "Malta" },
+  { value: "marshall_islands", label: "Marshall Islands" },
+  { value: "mauritania", label: "Mauritania" },
+  { value: "mauritius", label: "Mauritius" },
+  { value: "mexico", label: "Mexico" },
+  { value: "micronesia", label: "Micronesia" },
+  { value: "moldova", label: "Moldova" },
+  { value: "monaco", label: "Monaco" },
+  { value: "mongolia", label: "Mongolia" },
+  { value: "montenegro", label: "Montenegro" },
+  { value: "morocco", label: "Morocco" },
+  { value: "mozambique", label: "Mozambique" },
+  { value: "myanmar", label: "Myanmar" },
+  { value: "namibia", label: "Namibia" },
+  { value: "nauru", label: "Nauru" },
+  { value: "nepal", label: "Nepal" },
+  { value: "netherlands", label: "Netherlands" },
+  { value: "new_zealand", label: "New Zealand" },
+  { value: "nicaragua", label: "Nicaragua" },
+  { value: "niger", label: "Niger" },
+  { value: "nigeria", label: "Nigeria" },
+  { value: "norway", label: "Norway" },
+  { value: "oman", label: "Oman" },
+  { value: "pakistan", label: "Pakistan" },
+  { value: "palau", label: "Palau" },
+  { value: "panama", label: "Panama" },
+  { value: "papua_new_guinea", label: "Papua New Guinea" },
+  { value: "paraguay", label: "Paraguay" },
+  { value: "peru", label: "Peru" },
+  { value: "philippines", label: "Philippines" },
+  { value: "poland", label: "Poland" },
+  { value: "portugal", label: "Portugal" },
+  { value: "qatar", label: "Qatar" },
+  { value: "romania", label: "Romania" },
+  { value: "russia", label: "Russia" },
+  { value: "rwanda", label: "Rwanda" },
+  { value: "saint_kitts_and_nevis", label: "Saint Kitts and Nevis" },
+  { value: "saint_lucia", label: "Saint Lucia" },
+  { value: "saint_vincent", label: "Saint Vincent and the Grenadines" },
+  { value: "samoa", label: "Samoa" },
+  { value: "san_marino", label: "San Marino" },
+  { value: "sao_tome", label: "Sao Tome and Principe" },
+  { value: "saudi_arabia", label: "Saudi Arabia" },
+  { value: "senegal", label: "Senegal" },
+  { value: "serbia", label: "Serbia" },
+  { value: "seychelles", label: "Seychelles" },
+  { value: "sierra_leone", label: "Sierra Leone" },
+  { value: "singapore", label: "Singapore" },
+  { value: "slovakia", label: "Slovakia" },
+  { value: "slovenia", label: "Slovenia" },
+  { value: "solomon_islands", label: "Solomon Islands" },
+  { value: "somalia", label: "Somalia" },
+  { value: "south_africa", label: "South Africa" },
+  { value: "spain", label: "Spain" },
+  { value: "sri_lanka", label: "Sri Lanka" },
+  { value: "sudan", label: "Sudan" },
+  { value: "suriname", label: "Suriname" },
+  { value: "swaziland", label: "Swaziland" },
+  { value: "sweden", label: "Sweden" },
+  { value: "switzerland", label: "Switzerland" },
+  { value: "syria", label: "Syria" },
+  { value: "taiwan", label: "Taiwan" },
+  { value: "tajikistan", label: "Tajikistan" },
+  { value: "tanzania", label: "Tanzania" },
+  { value: "thailand", label: "Thailand" },
+  { value: "togo", label: "Togo" },
+  { value: "tonga", label: "Tonga" },
+  { value: "trinidad_and_tobago", label: "Trinidad and Tobago" },
+  { value: "tunisia", label: "Tunisia" },
+  { value: "turkey", label: "Turkey" },
+  { value: "turkmenistan", label: "Turkmenistan" },
+  { value: "tuvalu", label: "Tuvalu" },
+  { value: "uganda", label: "Uganda" },
+  { value: "ukraine", label: "Ukraine" },
+  { value: "united_arab_emirates", label: "United Arab Emirates" },
+  { value: "united_kingdom", label: "United Kingdom" },
+  { value: "united_states", label: "United States" },
+  { value: "uruguay", label: "Uruguay" },
+  { value: "uzbekistan", label: "Uzbekistan" },
+  { value: "vanuatu", label: "Vanuatu" },
+  { value: "vatican_city", label: "Vatican City" },
+  { value: "venezuela", label: "Venezuela" },
+  { value: "vietnam", label: "Vietnam" },
+  { value: "yemen", label: "Yemen" },
+  { value: "zambia", label: "Zambia" },
+  { value: "zimbabwe", label: "Zimbabwe" }
+] as const;
+
+type CountryValue = typeof countries[number]['value'];
 
 export default function ProfilePage() {
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<typeof tabs[number]>("myProfile")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
   const [password, setPassword] = useState("••••••••")
   const [showPassword, setShowPassword] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+  const [formData, setFormData] = useState<Partial<UserProfile>>({
+    first_name: "",
+    last_name: "",
     email: "",
-    country: "spain",
-    city: "madrid"
+    country: "",
+    city: "",
+    profile_picture: null
   })
-  
+
   const t = useTranslations()
   const n = useTranslations('navigation')
   const p = useTranslations('profile')
   const router = useRouter()
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true)
+      const profile = await getUserProfile()
+      setFormData({
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
+        email: profile.email || "",
+        country: profile.country || "",
+        city: profile.profile?.city || "",
+      })
+      if (profile.profile?.profile_picture_url) {
+        setAvatarUrl(profile.profile.profile_picture_url)
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load profile",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      const url = URL.createObjectURL(file)
+      setAvatarUrl(url)
+      setFormData(prev => ({
+        ...prev,
+        profile_picture: file
+      }))
+    }
+  }
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click()
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -52,10 +297,44 @@ export default function ProfilePage() {
   }
 
   const handleSubmit = async () => {
-    // TODO: Implement form submission
-    console.log('Form data:', formData)
+    try {
+      setLoading(true)
+      await updateUserProfile(formData)
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      })
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
+  useEffect(() => {
+    setMounted(true)
+    fetchUserProfile()
+  }, [])
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  // Only render content after mounting to avoid hydration issues
   if (!mounted) {
     return null
   }
@@ -68,10 +347,13 @@ export default function ProfilePage() {
       </div>
 
       {/* Mobile Sidebar */}
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-black transition-transform duration-300 ease-in-out border-r border-gray-100 dark:border-gray-800 md:hidden",
-        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <div 
+        ref={mobileMenuRef}
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-black transition-transform duration-300 ease-in-out border-r border-gray-100 dark:border-gray-800 md:hidden",
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
         <Sidebar className="h-full" />
       </div>
 
@@ -148,85 +430,125 @@ export default function ProfilePage() {
               <div className="flex-1 max-w-full lg:max-w-[1000px]">
                 <div className="relative group mb-8 md:mb-12">
                   <div className="flex items-center justify-center">
-                    <Avatar className="h-20 md:h-28 w-20 md:w-28 ring-4 ring-white dark:ring-gray-800 shadow-lg relative">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                    <Avatar 
+                      className="h-20 md:h-28 w-20 md:w-28 ring-4 ring-white dark:ring-gray-800 shadow-lg relative cursor-pointer"
+                      onClick={handleAvatarClick}
+                    >
                       <AvatarImage 
-                        src="/placeholder.svg" 
-                        alt={formData.firstName || "User"}
+                        src={avatarUrl || formData.profile?.profile_picture_url || "/placeholder.svg"}
+                        alt={formData.first_name || "User"}
                         className="object-cover"
                       />
                       <AvatarFallback className="text-xl">
-                        {(formData.firstName?.[0] || "U") + (formData.lastName?.[0] || "N")}
+                        {(formData.first_name?.[0] || "U") + (formData.last_name?.[0] || "N")}
                       </AvatarFallback>
                       <div className="absolute -bottom-2 -right-2 bg-[#8CC63F] text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
-                        01
+                        <Camera className="w-4 h-4" />
                       </div>
                     </Avatar>
-                    <button className="absolute bottom-0 right-1/2 translate-x-12 translate-y-2 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Camera className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                    </button>
                   </div>
                 </div>
 
                 <div className="space-y-8">
                   <div className="bg-white dark:bg-black rounded-2xl shadow-sm p-6">
                     <div className="flex items-center justify-between mb-8">
-                      <h2 className="text-lg font-semibold">{p('personalInformation')}</h2>
+                      <h2 className="text-lg font-semibold">{p('personalInfo')}</h2>
                     </div>
                     <div className="grid gap-6">
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div>
+                          <label className="block text-sm font-medium mb-2">
+                            {p('firstName')}
+                          </label>
                           <Input 
                             className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
-                            placeholder={p('firstName')}
-                            value={formData.firstName}
-                            onChange={(e) => handleInputChange('firstName', e.target.value)}
+                            value={formData.first_name || ''}
+                            onChange={(e) => handleInputChange('first_name', e.target.value)}
                           />
                         </div>
                         <div>
+                          <label className="block text-sm font-medium mb-2">
+                            {p('lastName')}
+                          </label>
                           <Input 
                             className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
-                            placeholder={p('lastName')}
-                            value={formData.lastName}
-                            onChange={(e) => handleInputChange('lastName', e.target.value)}
+                            value={formData.last_name || ''}
+                            onChange={(e) => handleInputChange('last_name', e.target.value)}
                           />
                         </div>
                       </div>
                       <div>
+                        <label className="block text-sm font-medium mb-2">
+                          {p('email')}
+                        </label>
                         <Input 
                           className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
-                          placeholder={p('email')}
                           type="email"
-                          value={formData.email}
+                          value={formData.email || ''}
                           onChange={(e) => handleInputChange('email', e.target.value)}
                         />
                       </div>
-                      <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          {p('country')}
+                        </label>
                         <Select 
-                          value={formData.country}
+                          value={formData.country || ''} 
                           onValueChange={(value) => handleInputChange('country', value)}
                         >
                           <SelectTrigger className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700">
-                            <SelectValue placeholder={p('country')} />
+                            <SelectValue placeholder={p('selectCountry')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="spain">Spain</SelectItem>
-                            <SelectItem value="france">France</SelectItem>
-                            <SelectItem value="germany">Germany</SelectItem>
+                            {countries.map((country) => (
+                              <SelectItem key={country.value} value={country.value}>
+                                {country.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
-                        <Select
-                          value={formData.city}
-                          onValueChange={(value) => handleInputChange('city', value)}
-                        >
-                          <SelectTrigger className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700">
-                            <SelectValue placeholder={p('city')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="madrid">Madrid</SelectItem>
-                            <SelectItem value="barcelona">Barcelona</SelectItem>
-                            <SelectItem value="valencia">Valencia</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          {p('city')}
+                        </label>
+                        <Input 
+                          className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
+                          value={formData.city || ''}
+                          onChange={(e) => handleInputChange('city', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2">
+                          {p('password')}
+                        </label>
+                        <div className="relative">
+                          <Input 
+                            type={showPassword ? "text" : "password"}
+                            className="bg-gray-50 border-gray-100 pr-10 dark:bg-gray-900/50 dark:border-gray-700" 
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            disabled
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -236,24 +558,6 @@ export default function ProfilePage() {
                       <h2 className="text-lg font-semibold">{p('passwordManager')}</h2>
                     </div>
                     <div className="space-y-4">
-                      <div className="relative">
-                        <Input 
-                          type={showPassword ? "text" : "password"}
-                          className="bg-gray-50 border-gray-100 pr-10 dark:bg-gray-900/50 dark:border-gray-700" 
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                        />
-                        <button
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-500"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
                       <button
                         className="text-teal-500 text-sm hover:underline"
                       >
@@ -265,8 +569,16 @@ export default function ProfilePage() {
                   <Button 
                     className="w-full bg-teal-600 hover:bg-teal-500 text-white" 
                     onClick={handleSubmit}
+                    disabled={loading}
                   >
-                    {p('saveChanges')}
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        {p('saving')}
+                      </div>
+                    ) : (
+                      p('saveChanges')
+                    )}
                   </Button>
                 </div>
               </div>

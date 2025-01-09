@@ -327,21 +327,82 @@
     },
     
     "profile": {
-      "personalInformation": "Personal Information",
+      "title": "Profile",
+      "description": "Manage your profile information",
+      "personalInfo": "Personal Information",
       "firstName": "First Name",
       "lastName": "Last Name",
       "email": "Email",
+      "username": "Username",
       "country": "Country",
+      "selectCountry": "Select Country",
       "city": "City",
-      "passwordManager": "Password Manager",
+      "password": "Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
       "changePassword": "Change Password",
+      "passwordManager": "Password Manager",
+      "save": "Save",
       "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "uploadAvatar": "Upload Avatar",
+      "removeAvatar": "Remove Avatar",
       "companyName": "Company Name",
       "users": "Users",
       "userName": "User",
       "position": "Position",
       "new": "New",
-      "addNewUser": "Add New User"
+      "addNewUser": "Add New User",
+      "userManagement": "User Management",
+      "success": {
+        "profileUpdated": "Profile updated successfully",
+        "avatarUpdated": "Avatar updated successfully",
+        "avatarRemoved": "Avatar removed successfully",
+        "passwordChanged": "Password changed successfully",
+        "userAdded": "User added successfully",
+        "userRemoved": "User removed successfully"
+      },
+      "errors": {
+        "updateFailed": "Failed to update profile",
+        "avatarUploadFailed": "Failed to upload avatar",
+        "avatarRemoveFailed": "Failed to remove avatar",
+        "passwordChangeFailed": "Failed to change password",
+        "currentPasswordIncorrect": "Current password is incorrect",
+        "networkError": "Network error occurred",
+        "userAddFailed": "Failed to add user",
+        "userRemoveFailed": "Failed to remove user"
+      },
+      "validation": {
+        "firstName": {
+          "required": "First name is required"
+        },
+        "lastName": {
+          "required": "Last name is required"
+        },
+        "email": {
+          "required": "Email is required",
+          "invalid": "Invalid email address"
+        },
+        "country": {
+          "required": "Country is required"
+        },
+        "city": {
+          "required": "City is required"
+        },
+        "currentPassword": {
+          "required": "Current password is required"
+        },
+        "newPassword": {
+          "required": "New password is required",
+          "min": "Password must be at least 8 characters"
+        },
+        "confirmPassword": {
+          "required": "Please confirm your password",
+          "match": "Passwords must match"
+        }
+      }
     },
     "epdPreview": "EPD Preview",
     "NotFound": {

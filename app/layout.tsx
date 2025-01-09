@@ -5,6 +5,7 @@ import { Providers } from './providers'
 import { getServerSession } from 'next-auth'
 import { nextAuthOptions } from './api/auth/[...nextauth]/route'
 import { getMessages } from 'next-intl/server'
+import { Toaster } from "@/components/ui/toaster"
 
 const defaultLocale = 'en';
 
@@ -37,6 +38,7 @@ export default async function RootLayout({
           locale={safeLocale}
         >
           {children}
+          <Toaster />
         </Providers>
       </body>
     </html>

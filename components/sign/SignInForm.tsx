@@ -108,33 +108,31 @@ function SignInForm({
   }
 
   const onSubmit: SubmitHandler<z.infer<typeof SignInSchema>> = async (values) => {
-    // Reset previous messages
     setMessage(null);
-    
     setLoading(true);
     
     try {
-      setLoading(true);
-      setMessage(null);
+      console.log('Attempting sign in with:', { username: values.username });
       
-      // Sign in with NextAuth
       const result = await signIn("credentials", {
         redirect: false,
         username: values.username.trim(),
         password: values.password.trim(),
-        callbackUrl: "/dashboard/profile" // Use path without locale
+        callbackUrl: "/dashboard/profile"
       });
+
+      console.log('Sign in result:', result);
 
       if (result?.error) {
         console.error('Sign-In Error:', result.error);
         let errorMessage = t("invalidCredentials");
         
-        // Map specific error messages
-        if (result.error === "Please provide both username and password") {
-          errorMessage = t("validation.credentials.required");
-        } else if (result.error.includes("Invalid credentials")) {
+        if (result.error === "CredentialsSignin" || result.error.includes("Invalid credentials")) {
           errorMessage = t("invalidCredentials");
+        } else if (result.error === "Please provide both username and password") {
+          errorMessage = t("validation.credentials.required");
         } else {
+          console.error('Unknown error:', result.error);
           errorMessage = t("errors.unknown");
         }
         
@@ -145,25 +143,30 @@ function SignInForm({
         return;
       }
 
-      console.log('Sign-in successful');
+      // Success
       setMessage({
         type: "success",
         text: t("success")
       });
 
-      // Close the modal
-      onClose();
+      // Store session in localStorage after successful sign-in
+      const session = await fetch('/api/auth/session').then(res => res.json());
+      if (session) {
+        localStorage.setItem('session', JSON.stringify(session));
+        console.log('Session stored in localStorage:', session);
+      }
 
-      // Redirect to dashboard without locale prefix
-      const redirectPath = "/dashboard/profile";
-      console.log('Redirecting to:', redirectPath);
-      router.replace(redirectPath);
-      return;
+      // Redirect after successful sign in
+      if (result?.url) {
+        router.push(result.url);
+      } else {
+        router.push('/dashboard/profile');
+      }
     } catch (error) {
-      console.error('Unexpected Authentication Error:', error);
+      console.error('Sign in error:', error);
       setMessage({
         type: "error",
-        text: t("networkError")
+        text: t("errors.unknown")
       });
     } finally {
       setLoading(false);

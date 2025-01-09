@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export interface SignUpData {
   first_name: string;
@@ -12,6 +12,25 @@ export interface SignUpData {
   industry?: string;
   country?: string;
   user_type: 'regular' | 'company';
+}
+
+// Profile interface
+export interface UserProfile {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  user_type: 'regular' | 'company' | 'admin';
+  company_name?: string;
+  job_title?: string;
+  industry?: string;
+  country?: string;
+  phone_number?: string;
+  profile?: {
+    bio?: string;
+    profile_picture?: string;
+  };
 }
 
 export async function checkUsername(username: string): Promise<boolean> {
@@ -145,5 +164,121 @@ export async function signUp(data: SignUpData): Promise<any> {
   } catch (error) {
     console.error('Error during signup:', error);
     throw error;
+  }
+}
+
+export async function getSession() {
+  try {
+    const session = JSON.parse(localStorage.getItem('session') || 'null');
+    console.log('Current session:', session); // Log the current session
+    if (!session) {
+      localStorage.removeItem('session');
+      return null;
+    }
+    return session;
+  } catch (error) {
+    console.error('Error getting session:', error);
+    return null;
+  }
+}
+
+import { getSession as getNextAuthSession } from 'next-auth/react'
+
+// Get user profile
+export async function getUserProfile(): Promise<UserProfile> {
+  const session = await getNextAuthSession()
+  console.log('NextAuth session:', session)
+  
+  if (!session?.accessToken) {
+    console.error('No access token in session')
+    throw new Error('Not authenticated')
+  }
+
+  const url = `${process.env.NEXT_PUBLIC_API_URL}/users/profile/`
+  console.log('Fetching profile from:', url)
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${session.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    console.log('Profile response status:', response.status)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Profile fetch error:', response.status, errorText)
+      
+      if (response.status === 401) {
+        // Token expired or invalid
+        throw new Error('Session expired. Please sign in again.')
+      }
+      throw new Error('Failed to fetch profile')
+    }
+
+    const data = await response.json()
+    console.log('Profile data:', data)
+    return data
+  } catch (error) {
+    console.error('Error fetching profile:', error)
+    throw error
+  }
+}
+
+// Update user profile
+export async function updateUserProfile(data: Partial<UserProfile>) {
+  const session = await getNextAuthSession()
+  console.log('Session in updateUserProfile:', session)
+  
+  if (!session?.accessToken) {
+    console.error('No access token in session')
+    throw new Error('Not authenticated')
+  }
+
+  const formData = new FormData()
+  
+  // Handle file upload
+  if (data.profile_picture instanceof File) {
+    console.log('Appending profile picture to form data')
+    formData.append('profile_picture', data.profile_picture)
+  }
+  
+  // Handle other fields
+  Object.entries(data).forEach(([key, value]) => {
+    if (key !== 'profile_picture' && value !== undefined) {
+      console.log(`Appending ${key} to form data:`, value)
+      formData.append(key, value.toString())
+    }
+  })
+
+  const url = `${process.env.NEXT_PUBLIC_API_URL}/users/profile/`
+  console.log('Updating profile at:', url)
+
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${session.accessToken}`,
+        // Don't set Content-Type header when using FormData
+      },
+      body: formData
+    })
+    
+    console.log('Update response status:', response.status)
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Profile update error:', response.status, errorText)
+      throw new Error('Failed to update profile')
+    }
+
+    const updatedProfile = await response.json()
+    console.log('Updated profile data:', updatedProfile)
+    return updatedProfile
+  } catch (error) {
+    console.error('Error updating profile:', error)
+    throw error
   }
 }
