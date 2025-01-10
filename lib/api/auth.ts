@@ -187,39 +187,31 @@ import { getSession as getNextAuthSession } from 'next-auth/react'
 // Get user profile
 export async function getUserProfile(): Promise<UserProfile> {
   const session = await getNextAuthSession()
-  console.log('NextAuth session:', session)
   
   if (!session?.accessToken) {
-    console.error('No access token in session')
     throw new Error('Not authenticated')
   }
 
   const url = `${process.env.NEXT_PUBLIC_API_URL}/users/profile/`
-  console.log('Fetching profile from:', url)
   
   try {
     const response = await fetch(url, {
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${session.accessToken}`,
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
     })
-    
-    console.log('Profile response status:', response.status)
-    
+
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Profile fetch error:', response.status, errorText)
-      
       if (response.status === 401) {
-        // Token expired or invalid
-        throw new Error('Session expired. Please sign in again.')
+        throw new Error('Session expired')
       }
       throw new Error('Failed to fetch profile')
     }
 
     const data = await response.json()
-    console.log('Profile data:', data)
     return data
   } catch (error) {
     console.error('Error fetching profile:', error)

@@ -78,19 +78,16 @@ export const nextAuthOptions: NextAuthOptions = {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.id = user.id;
-        console.log('JWT Callback - Token set:', token); // Log the token
       }
       return token;
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken;
-      session.refreshToken = token.refreshToken;
-      if (session.user) {
+      if (token) {
+        session.accessToken = token.accessToken;
         session.user.id = token.id;
       }
-      console.log('Session Callback - Session set:', session); // Log the session
       return session;
-    },
+    }
   },
   pages: {
     signIn: '/signin',
