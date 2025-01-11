@@ -14,12 +14,14 @@ import { Eye, EyeOff, Camera, Menu, Loader2 } from 'lucide-react'
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { useRouter } from '@/i18n/navigation'
-import { getUserProfile, updateUserProfile, type UserProfile } from "@/lib/api/auth"
+import { getUserProfile, updateUserProfile, getCompanyUsers, type UserProfile } from "@/lib/api/auth"
 import { useToast } from "@/components/ui/use-toast"
 import { useState, useEffect, useRef } from "react"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Sidebar } from "@/components/sidebar"
 import { LanguageSwitcher } from '@/components/language-switcher'
+import { signOut, useSession } from "next-auth/react"
+import { useUserStore } from '@/lib/store/user'
 
 const tabs = ["myEPDs", "inbox", "dataDirectory", "myProfile"] as const
 
@@ -226,21 +228,37 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<typeof tabs[number]>("myProfile")
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string>("")
+  const [avatarKey, setAvatarKey] = useState(0)
+  const [users, setUsers] = useState<UserProfile[]>([])
+  const [usersLoading, setUsersLoading] = useState(false)
+  const [usersError, setUsersError] = useState<string | null>(null)
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
   const [password, setPassword] = useState("••••••••")
   const [showPassword, setShowPassword] = useState(false)
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    country: string;
+    city: string;
+    company_name: string;
+    user_type: 'regular' | 'company' | 'admin';
+    profile_picture?: File;
+  }>({
+    id: 0,
     first_name: "",
     last_name: "",
     email: "",
     country: "",
     city: "",
     company_name: "",
-    user_type: "" as 'regular' | 'company' | 'admin'
+    user_type: "regular",
+    profile_picture: undefined
   })
 
   const t = useTranslations()
@@ -248,22 +266,53 @@ export default function ProfilePage() {
   const p = useTranslations('profile')
   const router = useRouter()
 
+  const { updateUser } = useUserStore()
+
+  const [originalProfile, setOriginalProfile] = useState<UserProfile | null>(null)
+
+  const [profileVersion, setProfileVersion] = useState(0)
+
+  // Fetch profile data whenever profileVersion changes
+  useEffect(() => {
+    fetchUserProfile()
+  }, [profileVersion])
+
   const fetchUserProfile = async () => {
     try {
       setIsLoading(true)
       const profile = await getUserProfile()
-      console.log('Profile data:', profile)
-      setFormData({
+      console.log('Fetched profile data:', profile)
+
+      // Redirect regular users to a different page
+      if (profile.user_type === 'regular') {
+        console.log('Regular user detected, redirecting...')
+        router.push('/dashboard/coming-soon')
+        return
+      }
+
+      const profileData = {
+        id: profile.id,
         first_name: profile.first_name || "",
         last_name: profile.last_name || "",
         email: profile.email || "",
         country: profile.country || "",
         city: profile.profile?.city || "",
         company_name: profile.company_name || "",
-        user_type: profile.user_type || "regular"
-      })
+        user_type: profile.user_type || "regular",
+        profile_picture: undefined
+      }
+
+      console.log('Setting form data:', profileData)
+      setFormData(profileData)
+      setOriginalProfile(profile)
+
+      // Set avatar URL if present
       if (profile.profile?.profile_picture_url) {
-        setAvatarUrl(profile.profile.profile_picture_url)
+        const timestamp = new Date().getTime()
+        const newAvatarUrl = `${profile.profile.profile_picture_url}?t=${timestamp}`
+        console.log('Setting initial avatar URL to:', newAvatarUrl)
+        setAvatarUrl(newAvatarUrl)
+        setAvatarKey(prev => prev + 1)
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
@@ -280,16 +329,145 @@ export default function ProfilePage() {
   const handleSubmit = async () => {
     try {
       setIsSaving(true)
-      await updateUserProfile(formData)
+      
+      // Only include fields that have changed
+      const changedFields = {} as Partial<UserProfile>
+      const profileChanges = {} as any
+
+      if (formData.first_name !== originalProfile?.first_name) {
+        changedFields.first_name = formData.first_name
+      }
+      if (formData.last_name !== originalProfile?.last_name) {
+        changedFields.last_name = formData.last_name
+      }
+      if (formData.country !== originalProfile?.country) {
+        changedFields.country = formData.country
+      }
+      if (formData.city !== originalProfile?.city) {
+        profileChanges.city = formData.city
+      }
+      if (formData.company_name !== originalProfile?.company_name) {
+        changedFields.company_name = formData.company_name
+      }
+      if (formData.email !== originalProfile?.email) {
+        changedFields.email = formData.email
+      }
+
+      // Add profile picture if it exists
+      if (formData.profile_picture) {
+        profileChanges.profile_picture = formData.profile_picture
+      }
+
+      // Only add profile to changedFields if there are profile changes
+      if (Object.keys(profileChanges).length > 0) {
+        changedFields.profile = profileChanges
+      }
+
+      console.log('Sending update with fields:', changedFields)
+
+      // Only proceed if there are changes
+      if (Object.keys(changedFields).length === 0) {
+        toast({
+          title: "No Changes",
+          description: "No changes were made to your profile",
+        })
+        setIsSaving(false)
+        return
+      }
+
+      // Add a delay before fetching updated profile to ensure database save is complete
+      const updatedProfile = await updateUserProfile(changedFields)
+      console.log('Server response:', updatedProfile)
+
+      // Wait a moment to ensure the file is processed
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      if (updatedProfile?.profile?.profile_picture_url) {
+        // Add timestamp to URL to prevent caching
+        const timestamp = new Date().getTime()
+        const newAvatarUrl = `${updatedProfile.profile.profile_picture_url}?t=${timestamp}`
+        console.log('Setting new avatar URL:', newAvatarUrl)
+        setAvatarUrl(newAvatarUrl)
+        setAvatarKey(prev => prev + 1)
+      }
+
+      // Update form data with fresh data from server
+      setFormData({
+        id: updatedProfile.id,
+        first_name: updatedProfile.first_name || "",
+        last_name: updatedProfile.last_name || "",
+        email: updatedProfile.email || "",
+        country: updatedProfile.country || "",
+        city: updatedProfile.profile?.city || "",
+        company_name: updatedProfile.company_name || "",
+        user_type: updatedProfile.user_type || "regular",
+        profile_picture: undefined // Reset the file input
+      })
+
+      // Update original profile
+      setOriginalProfile(updatedProfile)
+
+      // Update user store with new profile data
+      updateUser({
+        first_name: updatedProfile.first_name || "",
+        last_name: updatedProfile.last_name || "",
+        email: updatedProfile.email || "",
+        company_name: updatedProfile.company_name || "",
+        profile_picture_url: updatedProfile.profile?.profile_picture_url ? 
+          `${updatedProfile.profile.profile_picture_url}?t=${Date.now()}` : undefined
+      })
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+
       toast({
         title: "Success",
         description: "Profile updated successfully",
       })
     } catch (error) {
       console.error('Error updating profile:', error)
+      
+      // Handle token expiration
+      if (error instanceof Error && error.message.includes('token_not_valid')) {
+        toast({
+          title: "Session Expired",
+          description: "Your session has expired. Please sign in again.",
+          variant: "destructive",
+        })
+        // Sign out and redirect to sign in
+        await signOut({ redirect: true, callbackUrl: '/signin' })
+        return
+      }
+
+      // Handle database connection errors
+      if (error instanceof Error && 
+          (error.message.includes('connection') || 
+           error.message.includes('server closed') ||
+           error.message.includes('OperationalError'))) {
+        toast({
+          title: "Connection Error",
+          description: "Unable to connect to the server. Please try again in a few moments.",
+          variant: "destructive",
+          duration: 5000,
+        })
+        return
+      }
+
+      // Handle specific API errors
+      if (error instanceof Error && error.message.includes('email')) {
+        toast({
+          title: "Error",
+          description: "This email is already in use by another account",
+          variant: "destructive",
+        })
+        return
+      }
+
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: "Failed to update profile. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -297,11 +475,14 @@ export default function ProfilePage() {
     }
   }
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
     if (file) {
-      const url = URL.createObjectURL(file)
-      setAvatarUrl(url)
+      // Create a preview URL for the selected file
+      const previewUrl = URL.createObjectURL(file)
+      setAvatarUrl(previewUrl)
+      setAvatarKey(prev => prev + 1)
+      
       setFormData(prev => ({
         ...prev,
         profile_picture: file
@@ -313,16 +494,49 @@ export default function ProfilePage() {
     fileInputRef.current?.click()
   }
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
   }
 
+  // Fetch company users
+  const fetchUsers = async () => {
+    try {
+      setUsersLoading(true);
+      const data = await getCompanyUsers();
+      console.log('Fetched users:', data);
+      
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        console.error('Unexpected users data format:', data);
+        setUsers([]);
+        setUsersError('Invalid data format received');
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setUsers([]);
+      setUsersError(error instanceof Error ? error.message : 'Failed to fetch users');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (formData.user_type === 'company') {
+      fetchUsers();
+    } else {
+      setUsers([]);
+      setUsersError(null);
+    }
+  }, [formData.user_type]);
+
+
+
   useEffect(() => {
     setMounted(true)
-    fetchUserProfile()
   }, [])
 
   useEffect(() => {
@@ -442,14 +656,17 @@ export default function ProfilePage() {
                       className="h-20 md:h-28 w-20 md:w-28 ring-4 ring-white dark:ring-gray-800 shadow-lg relative cursor-pointer"
                       onClick={handleAvatarClick}
                     >
-                      <AvatarImage 
-                        src={avatarUrl || "/placeholder.svg"}
-                        alt={formData.first_name || "User"}
-                        className="object-cover"
-                      />
-                      <AvatarFallback className="text-xl">
-                        {(formData.first_name?.[0] || "U") + (formData.last_name?.[0] || "N")}
-                      </AvatarFallback>
+                      {avatarUrl ? (
+                        <AvatarImage 
+                          src={avatarUrl}
+                          alt="Profile picture"
+                          key={avatarKey}
+                        />
+                      ) : (
+                        <AvatarFallback className="text-xl">
+                          {(formData.first_name?.[0] || "U") + (formData.last_name?.[0] || "N")}
+                        </AvatarFallback>
+                      )}
                       <div className="absolute -bottom-2 -right-2 bg-[#8CC63F] text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
                         <Camera className="w-4 h-4" />
                       </div>
@@ -598,24 +815,41 @@ export default function ProfilePage() {
                 </Avatar>
                 <div>
                   <h2 className="text-base font-medium">{formData.company_name || "Company Name"}</h2>
-                  <p className="text-sm text-gray-500">Users User</p>
+                  <p className="text-medium-gray-500">Users User</p>
                 </div>
               </div>
               
               <div className="space-y-3 md:space-y-4">
-                {/* Users List */}
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
-                      U{i + 1}
+                {usersLoading ? (
+                  // Loading skeleton
+                  [...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-gray-100 animate-pulse" />
+                      <div className="flex-1">
+                        <div className="h-4 w-24 bg-gray-100 rounded animate-pulse mb-1" />
+                        <div className="h-3 w-16 bg-gray-100 rounded animate-pulse" />
+                      </div>
                     </div>
+                  ))
+                ) : users.map((user) => (
+                  <div key={user.id} className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.profile?.profile_picture || "/placeholder.svg"} />
+                      <AvatarFallback className="bg-gray-100">
+                        {(user.first_name?.[0] || "U") + (user.last_name?.[0] || "N")}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">User Name {String(i + 1).padStart(2, '0')}</p>
-                      <p className="text-xs text-gray-500 truncate">Position</p>
+                      <p className="text-sm font-medium truncate">
+                        {user.first_name} {user.last_name}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {user.job_title || "Position"}
+                      </p>
                     </div>
-                    {i === 0 && (
+                    {user.id === formData.id && (
                       <span className="text-xs text-teal-500 font-medium flex-shrink-0">
-                        New
+                        You
                       </span>
                     )}
                   </div>
@@ -629,6 +863,9 @@ export default function ProfilePage() {
                 + Add New User
               </Button>
             </div>
+
+            {/* Users List */}
+        
           </div>
         </main>
       </div>

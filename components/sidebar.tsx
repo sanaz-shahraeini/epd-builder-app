@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
 import { useTranslations } from 'next-intl'
 import { signOut } from "next-auth/react"
-
+import { useUserStore } from '@/lib/store/user'
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 interface SidebarProps {
   className?: string;
@@ -54,6 +55,9 @@ function SidebarContent() {
   const router = useRouter()
   const pathname = usePathname()
   const n = useTranslations('navigation')
+  const { user } = useUserStore()
+
+  console.log('Current user in sidebar:', user)
 
   const isLinkActive = (path: string) => {
     if (!pathname) return false;
@@ -110,12 +114,26 @@ function SidebarContent() {
   return (
     <>
       <div className="p-4 flex items-center space-x-3">
-        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center">
-          <span className="text-gray-600 dark:text-gray-400">👤</span>
-        </div>
+        <Avatar className="w-8 h-8">
+          {user?.profile_picture_url ? (
+            <AvatarImage 
+              src={user.profile_picture_url} 
+              alt={user?.username || 'User'} 
+              className="object-cover"
+            />
+          ) : (
+            <AvatarFallback className="bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+              {user?.username?.[0]?.toUpperCase() || '👤'}
+            </AvatarFallback>
+          )}
+        </Avatar>
         <div>
-          <div className="font-medium text-gray-900 dark:text-gray-100">{n('userName')}</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">{n('companyName')}</div>
+          <div className="font-medium text-gray-900 dark:text-gray-100">
+            {user?.username || n('userName')}
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {user?.company_name || n('companyName')}
+          </div>
         </div>
       </div>
 

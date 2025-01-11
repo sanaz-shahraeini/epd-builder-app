@@ -427,5 +427,11 @@
       "today": "Today",
       "yesterday": "Yesterday",
       "subject": "Subject"
+    },
+    "ComingSoon": {
+      "title": "Coming Soon",
+      "description": "We're working hard to bring you an amazing dashboard experience.",
+      "subtext": "This feature is currently under development. We appreciate your patience.",
+      "goBack": "Go Back"
     }
 }

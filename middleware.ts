@@ -59,6 +59,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(signInUrl);
   }
 
+  // Handle regular user access
+  if (token?.user_type === 'regular') {
+    // Allow access to coming-soon page
+    if (pathname.includes('/dashboard/coming-soon')) {
+      return intlMiddleware(request);
+    }
+    // Redirect to coming-soon page from all other dashboard routes
+    if (pathname.includes('/dashboard')) {
+      console.log('Redirecting regular user to coming-soon page');
+      return NextResponse.redirect(new URL(`/${DEFAULT_LOCALE}/dashboard/coming-soon`, request.url));
+    }
+  }
+
   // Check for duplicate locales
   const segments = pathname.split('/').filter(Boolean);
   const localesInPath = segments.filter(segment => LOCALES.includes(segment));
@@ -71,21 +84,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(newPath, request.url));
   }
 
-  // Get locale from the pathname
-  const hasLocale = LOCALES.includes(segments[0]);
-  const currentLocale = hasLocale ? segments[0] : DEFAULT_LOCALE;
-  
-  // Get clean pathname without locale
-  const pathnameWithoutLocale = '/' + segments.slice(hasLocale ? 1 : 0).join('/');
-
   // Handle root path
   if (pathname === '/' || pathname === '') {
-    return NextResponse.redirect(new URL(`/${currentLocale}/signin`, request.url));
+    return NextResponse.redirect(new URL(`/${DEFAULT_LOCALE}/signin`, request.url));
   }
 
   // Handle authenticated users trying to access auth pages
-  if (token && matchRoute(pathnameWithoutLocale, publicRoutes)) {
-    return NextResponse.redirect(new URL(`/${currentLocale}/dashboard/profile`, request.url));
+  if (token && matchRoute(pathname, publicRoutes)) {
+    if (token.user_type === 'regular') {
+      return NextResponse.redirect(new URL(`/${DEFAULT_LOCALE}/dashboard/coming-soon`, request.url));
+    }
+    return NextResponse.redirect(new URL(`/${DEFAULT_LOCALE}/dashboard/profile`, request.url));
   }
 
   // Apply intl middleware for all other routes

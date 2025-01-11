@@ -26,6 +26,7 @@ export interface UserProfile {
   job_title?: string;
   industry?: string;
   country?: string;
+  city?: string;
   phone_number?: string;
   profile?: {
     bio?: string;
@@ -187,12 +188,14 @@ import { getSession as getNextAuthSession } from 'next-auth/react'
 // Get user profile
 export async function getUserProfile(): Promise<UserProfile> {
   const session = await getNextAuthSession()
+  console.log('Session in getUserProfile:', session)
   
   if (!session?.accessToken) {
     throw new Error('Not authenticated')
   }
 
   const url = `${process.env.NEXT_PUBLIC_API_URL}/users/profile/`
+  console.log('Fetching from URL:', url)
   
   try {
     const response = await fetch(url, {
@@ -205,6 +208,7 @@ export async function getUserProfile(): Promise<UserProfile> {
     })
 
     if (!response.ok) {
+      console.error('Profile fetch failed:', response.status, response.statusText)
       if (response.status === 401) {
         throw new Error('Session expired')
       }
@@ -212,9 +216,77 @@ export async function getUserProfile(): Promise<UserProfile> {
     }
 
     const data = await response.json()
-    return data
+    console.log('Raw profile data from API:', data)
+    
+    // Make sure we have all required fields
+    return {
+      id: data.id,
+      username: data.username,
+      email: data.email,
+      first_name: data.first_name || '',
+      last_name: data.last_name || '',
+      user_type: data.user_type || 'regular',
+      company_name: data.company_name || '',
+      city: data.city || '',
+      country: data.country || '',
+      profile: {
+        ...data.profile,
+        profile_picture_url: data.profile?.profile_picture_url || '',
+      }
+    }
   } catch (error) {
     console.error('Error fetching profile:', error)
+    throw error
+  }
+}
+
+// Get company users
+export async function getCompanyUsers(): Promise<UserProfile[]> {
+  try {
+    const session = await getNextAuthSession()
+    console.log('Session in getCompanyUsers:', session)
+    
+    if (!session?.accessToken) {
+      console.error('No access token found')
+      throw new Error('Not authenticated')
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const url = `${baseUrl}/users/company/`
+    console.log('Fetching company users from:', url)
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${session.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Failed to fetch company users:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText
+      })
+      throw new Error(`Failed to fetch company users: ${response.status} ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    console.log('Company users data:', data)
+    
+    // Check if the response has a users property
+    if (data && data.users && Array.isArray(data.users)) {
+      return data.users;
+    } else if (Array.isArray(data)) {
+      return data;
+    } else {
+      console.error('Unexpected response format:', data);
+      return [];
+    }
+  } catch (error) {
+    console.error('Error in getCompanyUsers:', error)
     throw error
   }
 }
@@ -231,15 +303,30 @@ export async function updateUserProfile(data: Partial<UserProfile>) {
 
   const formData = new FormData()
   
-  // Handle file upload
-  if (data.profile_picture instanceof File) {
-    console.log('Appending profile picture to form data')
-    formData.append('profile_picture', data.profile_picture)
+  // Handle profile fields separately
+  if (data.profile) {
+    // Handle file upload
+    if (data.profile.profile_picture instanceof File) {
+      console.log('Appending profile picture to form data')
+      formData.append('profile.profile_picture', data.profile.profile_picture)
+    }
+    
+    // Handle other profile fields
+    Object.entries(data.profile).forEach(([key, value]) => {
+      if (key !== 'profile_picture' && value !== undefined) {
+        console.log(`Appending profile.${key} to form data:`, value)
+        formData.append(`profile.${key}`, value.toString())
+      }
+    })
+
+    // Remove profile from data to avoid double processing
+    const { profile, ...restData } = data
+    data = restData
   }
   
   // Handle other fields
   Object.entries(data).forEach(([key, value]) => {
-    if (key !== 'profile_picture' && value !== undefined) {
+    if (value !== undefined) {
       console.log(`Appending ${key} to form data:`, value)
       formData.append(key, value.toString())
     }
@@ -247,6 +334,7 @@ export async function updateUserProfile(data: Partial<UserProfile>) {
 
   const url = `${process.env.NEXT_PUBLIC_API_URL}/users/profile/`
   console.log('Updating profile at:', url)
+  console.log('Form data entries:', Array.from(formData.entries()))
 
   try {
     const response = await fetch(url, {
@@ -263,7 +351,7 @@ export async function updateUserProfile(data: Partial<UserProfile>) {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Profile update error:', response.status, errorText)
-      throw new Error('Failed to update profile')
+      throw new Error(errorText)
     }
 
     const updatedProfile = await response.json()

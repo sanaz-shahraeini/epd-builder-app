@@ -1,11 +1,10 @@
 "use client";
 
-import React from "react";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
 import SignUpForm from "./SignUpForm";
@@ -21,6 +20,8 @@ import { useRouter } from '@/i18n/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { IoMailOutline, IoKeyOutline, IoPersonOutline, IoAtCircleOutline } from "react-icons/io5";
 import { FaGoogle } from "react-icons/fa";
+import { getUserProfile } from "@/lib/api/auth";
+import { useUserStore } from "@/lib/store/user";
 
 interface SignInFormProps {
   open: boolean;
@@ -50,12 +51,14 @@ function SignInForm({
   const router = useRouter();
   const t = useTranslations('SignIn');
   const locale = useLocale();
+  const { data: session } = useSession();
   const [authMethod, setAuthMethod] = useState<"password" | "email">("password");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
   const [verificationSent, setVerificationSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
+  const { setUser } = useUserStore();
 
   // Define Zod schema for form validation
   const SignInSchema = z.object({
@@ -115,13 +118,11 @@ function SignInForm({
       console.log('Attempting sign in with:', { username: values.username });
       
       const result = await signIn("credentials", {
-        redirect: false,
+        redirect: true,
         username: values.username.trim(),
         password: values.password.trim(),
-        callbackUrl: "/dashboard/profile"
+        callbackUrl: '/dashboard/profile'  // NextAuth redirect callback will handle user type redirection
       });
-
-      console.log('Sign in result:', result);
 
       if (result?.error) {
         console.error('Sign-In Error:', result.error);
@@ -140,27 +141,43 @@ function SignInForm({
           type: "error",
           text: errorMessage
         });
-        return;
-      }
-
-      // Success
-      setMessage({
-        type: "success",
-        text: t("success")
-      });
-
-      // Store session in localStorage after successful sign-in
-      const session = await fetch('/api/auth/session').then(res => res.json());
-      if (session) {
-        localStorage.setItem('session', JSON.stringify(session));
-        console.log('Session stored in localStorage:', session);
-      }
-
-      // Redirect after successful sign in
-      if (result?.url) {
-        router.push(result.url);
       } else {
-        router.push('/dashboard/profile');
+        // Fetch user profile after successful sign in
+        try {
+          const userProfile = await getUserProfile()
+          console.log('Fetched user profile after sign in:', userProfile)
+          
+          if (userProfile) {
+            const userData = {
+              id: userProfile.id,
+              username: userProfile.username,
+              first_name: userProfile.first_name || "",
+              last_name: userProfile.last_name || "",
+              email: userProfile.email || "",
+              user_type: userProfile.user_type || "regular",
+              profile_picture_url: userProfile.profile?.profile_picture_url || "",
+              company_name: userProfile.company_name || "",
+              city: userProfile.city || "",
+              country: userProfile.country || "",
+            }
+            
+            console.log('Setting user data in store after login:', userData)
+            setUser(userData)
+          }
+
+          // Redirect based on user type
+          if (userProfile.user_type === "regular") {
+            router.push("/dashboard/coming-soon")
+          } else {
+            router.push("/dashboard")
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error)
+          setMessage({
+            type: "error",
+            text: t("errors.unknown")
+          });
+        }
       }
     } catch (error) {
       console.error('Sign in error:', error);

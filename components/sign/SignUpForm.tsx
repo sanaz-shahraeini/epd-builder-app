@@ -169,7 +169,12 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
         .string()
         .oneOf([yup.ref('password')], t("validation.confirm_password.mustMatch"))
         .required(t("validation.confirm_password.required")),
-      company_name: yup.string().optional(),
+      company_name: yup
+        .string()
+        .trim()
+        .min(2, t("validation.company_name.min"))
+        .max(100, t("validation.company_name.max"))
+        .required(t("validation.company_name.required")),
       job_title: yup.string().optional(),
       phone_number: yup.string().optional(),
       industry: yup.string().optional(),
@@ -235,7 +240,8 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
         .matches(
           /^(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/,
           t("validation.phone_number.matches")
-        ),
+        )
+        .required(t("validation.phone_number.required")),
       industry: yup
         .string()
         .trim()
@@ -294,7 +300,7 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
         // Submit signup data
         const { confirm_password, ...signUpData } = values;
         
-        // For regular users, only send the necessary fields
+        // For regular users, include only necessary fields including company_name
         const dataToSend = activeTab === 'regular' 
           ? {
               first_name: signUpData.first_name,
@@ -302,6 +308,7 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
               username: signUpData.username,
               email: signUpData.email,
               password: signUpData.password,
+              company_name: signUpData.company_name,
               user_type: activeTab
             }
           : {
@@ -309,6 +316,7 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
               user_type: activeTab
             };
         
+        console.log('Sending signup data:', dataToSend);
         await signUp(dataToSend);
 
         // Show success message

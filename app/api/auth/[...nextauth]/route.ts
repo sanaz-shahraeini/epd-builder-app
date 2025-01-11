@@ -39,23 +39,23 @@ export const nextAuthOptions: NextAuthOptions = {
           }
 
           const data = await response.json();
-          console.log('Login successful, received tokens:', data);
+          console.log('Login successful, received data:', data);
 
           if (data && data.access) {
-            console.log('Access Token:', data.access); // Log the access token
             return {
               id: data.user?.id?.toString(),
               name: data.user?.username,
               email: data.user?.email,
               accessToken: data.access,
-              refreshToken: data.refresh
+              refreshToken: data.refresh,
+              user_type: data.user?.user_type
             };
           }
 
           console.error('Invalid response data:', data);
-          throw new Error('Invalid response from server');
+          throw new Error('Invalid response format');
         } catch (error) {
-          console.error('Auth error:', error);
+          console.error('Authorization error:', error);
           throw error;
         }
       },
@@ -73,28 +73,42 @@ export const nextAuthOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
-        token.id = user.id;
+        token.user_type = user.user_type;
       }
       return token;
     },
     async session({ session, token }) {
       if (token) {
         session.accessToken = token.accessToken;
-        session.user.id = token.id;
+        session.user = {
+          ...session.user,
+          id: token.id,
+          user_type: token.user_type
+        };
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Handle redirection based on user type
+      if (url.startsWith(baseUrl)) {
+        const token = await fetch(`${baseUrl}/api/auth/session`).then(res => res.json());
+        if (token?.user?.user_type === 'regular') {
+          return `${baseUrl}/dashboard/coming-soon`;
+        }
+        return url;
+      }
+      return baseUrl;
     }
   },
   pages: {
     signIn: '/signin',
     error: '/error',
   },
-  debug: process.env.NODE_ENV === 'development',
-};
+}
 
 const handler = NextAuth(nextAuthOptions);
-export { handler as GET, handler as POST }
+export { handler as GET, handler as POST };
