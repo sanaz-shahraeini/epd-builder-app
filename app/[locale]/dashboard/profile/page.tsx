@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Eye, EyeOff, Camera, Menu } from 'lucide-react'
+import { Eye, EyeOff, Camera, Menu, Loader2 } from 'lucide-react'
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { useRouter } from '@/i18n/navigation'
@@ -224,8 +224,8 @@ type CountryValue = typeof countries[number]['value'];
 export default function ProfilePage() {
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<typeof tabs[number]>("myProfile")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -233,13 +233,14 @@ export default function ProfilePage() {
   const mobileMenuRef = useRef<HTMLDivElement>(null)
   const [password, setPassword] = useState("••••••••")
   const [showPassword, setShowPassword] = useState(false)
-  const [formData, setFormData] = useState<Partial<UserProfile>>({
+  const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     email: "",
     country: "",
     city: "",
-    profile_picture: null
+    company_name: "",
+    user_type: "" as 'regular' | 'company' | 'admin'
   })
 
   const t = useTranslations()
@@ -249,14 +250,17 @@ export default function ProfilePage() {
 
   const fetchUserProfile = async () => {
     try {
-      setLoading(true)
+      setIsLoading(true)
       const profile = await getUserProfile()
+      console.log('Profile data:', profile)
       setFormData({
         first_name: profile.first_name || "",
         last_name: profile.last_name || "",
         email: profile.email || "",
         country: profile.country || "",
         city: profile.profile?.city || "",
+        company_name: profile.company_name || "",
+        user_type: profile.user_type || "regular"
       })
       if (profile.profile?.profile_picture_url) {
         setAvatarUrl(profile.profile.profile_picture_url)
@@ -269,7 +273,27 @@ export default function ProfilePage() {
         variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+    }
+  }
+
+  const handleSubmit = async () => {
+    try {
+      setIsSaving(true)
+      await updateUserProfile(formData)
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      })
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -294,26 +318,6 @@ export default function ProfilePage() {
       ...prev,
       [field]: value
     }))
-  }
-
-  const handleSubmit = async () => {
-    try {
-      setLoading(true)
-      await updateUserProfile(formData)
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      })
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
   }
 
   useEffect(() => {
@@ -350,22 +354,15 @@ export default function ProfilePage() {
       <div 
         ref={mobileMenuRef}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-black transition-transform duration-300 ease-in-out border-r border-gray-100 dark:border-gray-800 md:hidden",
+          "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 transform transition-transform duration-200 ease-in-out md:hidden",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <Sidebar className="h-full" />
       </div>
 
-      {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
-
-      <div className="flex-1 flex flex-col md:ml-64">
+      {/* Main Content */}
+      <div className="flex-1 md:ml-64">
         <header className="sticky top-0 z-40 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center h-14 px-4 md:px-8">
             <button
@@ -377,22 +374,25 @@ export default function ProfilePage() {
             </button>
             <div className="flex items-center gap-2.5 ml-2 md:ml-0">
               <Avatar className="h-8 w-8 ring-2 ring-gray-50 dark:ring-gray-800">
-                <AvatarImage src="/placeholder.svg" />
+                <AvatarImage src={avatarUrl || "/placeholder.svg"} />
                 <AvatarFallback className="bg-gray-100 dark:bg-gray-800">
-                  UN
+                  {(formData.first_name?.[0] || "U") + (formData.last_name?.[0] || "N")}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">User name</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {formData.first_name} {formData.last_name}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {formData.user_type === 'company' ? 'Company User' : formData.user_type === 'admin' ? 'Admin User' : 'Regular User'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 ml-auto">
               <div className="flex items-center">
-              <LanguageSwitcher />
+                <LanguageSwitcher />
                 <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-2" />
                 <ModeToggle />
-          
               </div>
             </div>
           </div>
@@ -424,10 +424,11 @@ export default function ProfilePage() {
           </nav>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-[1600px] mx-auto px-8 py-6">
-            <div className="flex flex-col lg:flex-row gap-6 lg:gap-16">
-              <div className="flex-1 max-w-full lg:max-w-[1000px]">
+        <main className="p-4 md:p-8">
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex-1">
+              <div className="space-y-6">
+                {/* Avatar Section */}
                 <div className="relative group mb-8 md:mb-12">
                   <div className="flex items-center justify-center">
                     <input
@@ -442,7 +443,7 @@ export default function ProfilePage() {
                       onClick={handleAvatarClick}
                     >
                       <AvatarImage 
-                        src={avatarUrl || formData.profile?.profile_picture_url || "/placeholder.svg"}
+                        src={avatarUrl || "/placeholder.svg"}
                         alt={formData.first_name || "User"}
                         className="object-cover"
                       />
@@ -456,6 +457,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                {/* Form Section */}
                 <div className="space-y-8">
                   <div className="bg-white dark:bg-black rounded-2xl shadow-sm p-6">
                     <div className="flex items-center justify-between mb-8">
@@ -567,14 +569,14 @@ export default function ProfilePage() {
                   </div>
 
                   <Button 
-                    className="w-full bg-teal-600 hover:bg-teal-500 text-white" 
+                    className="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium" 
                     onClick={handleSubmit}
-                    disabled={loading}
+                    disabled={isSaving}
                   >
-                    {loading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        {p('saving')}
+                    {isSaving ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>{p('saving')}</span>
                       </div>
                     ) : (
                       p('saveChanges')
@@ -582,50 +584,50 @@ export default function ProfilePage() {
                   </Button>
                 </div>
               </div>
-              
-              {/* User List Section */}
-              <div className="w-full lg:w-[300px] bg-white dark:bg-black rounded-2xl shadow-sm p-4 md:p-6 flex-shrink-0 h-fit order-first lg:order-last">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-gray-500" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" fill="currentColor"/>
-                      <path d="M12 14C7.58172 14 4 17.5817 4 22H20C20 17.5817 16.4183 14 12 14Z" fill="currentColor"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold">{p('companyName')}</h2>
-                    <p className="text-sm text-gray-500">{p('users')} User</p>
-                  </div>
+            </div>
+
+            {/* Right side - User List */}
+            <div className="w-full lg:w-[300px] bg-white dark:bg-black rounded-2xl shadow-sm p-4 md:p-6 flex-shrink-0 h-fit order-first lg:order-last">
+              {/* Company Header */}
+              <div className="flex items-center gap-3 mb-6">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={avatarUrl || "/placeholder.svg"} />
+                  <AvatarFallback className="bg-gray-100">
+                    {(formData.first_name?.[0] || "U") + (formData.last_name?.[0] || "N")}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="text-base font-medium">{formData.company_name || "Company Name"}</h2>
+                  <p className="text-sm text-gray-500">Users User</p>
                 </div>
-                
-                <div className="space-y-3 md:space-y-4">
-                  {[...Array(8)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-gray-100">
-                          {`U${i + 1}`}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{p('userName')} {String(i + 1).padStart(2, '0')}</p>
-                        <p className="text-xs text-gray-500 truncate">{p('position')}</p>
-                      </div>
-                      {i === 0 && (
-                        <span className="text-xs text-teal-500 font-medium flex-shrink-0">
-                          {p('new')}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                
-                <Button 
-                  className="w-full mt-6 bg-teal-600 hover:bg-teal-500 text-white font-medium" 
-                  onClick={() => console.log('Add new user')}
-                >
-                  + {p('addNewUser')}
-                </Button>
               </div>
+              
+              <div className="space-y-3 md:space-y-4">
+                {/* Users List */}
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
+                      U{i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">User Name {String(i + 1).padStart(2, '0')}</p>
+                      <p className="text-xs text-gray-500 truncate">Position</p>
+                    </div>
+                    {i === 0 && (
+                      <span className="text-xs text-teal-500 font-medium flex-shrink-0">
+                        New
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              <Button 
+                className="w-full mt-6 bg-teal-600 hover:bg-teal-500 text-white font-medium" 
+                onClick={() => console.log('Add new user')}
+              >
+                + Add New User
+              </Button>
             </div>
           </div>
         </main>

@@ -6,8 +6,8 @@ export interface SignUpData {
   username: string;
   email: string;
   password: string;
-  company_name: string;
-  job_title: string;
+  company_name?: string;
+  job_title?: string;
   phone_number?: string;
   industry?: string;
   country?: string;
@@ -118,12 +118,12 @@ export async function signUp(data: SignUpData): Promise<any> {
       username: data.username,
       email: data.email,
       password: data.password,
-      company_name: data.company_name,
-      job_title: data.job_title,
-      phone_number: data.phone_number,
-      industry: data.industry,
-      country: data.country,
-      user_type: data.user_type
+      user_type: data.user_type,
+      ...(data.company_name && { company_name: data.company_name }),
+      ...(data.job_title && { job_title: data.job_title }),
+      ...(data.phone_number && { phone_number: data.phone_number }),
+      ...(data.industry && { industry: data.industry }),
+      ...(data.country && { country: data.country })
     };
     
     console.log('Full signup request data:', {

@@ -48,6 +48,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Get the token and check if it's valid
+  const token = await getToken({ req: request });
+  const isProtectedRoute = matchRoute(pathname, protectedRoutes);
+
+  // If accessing a protected route without a valid token, redirect to signin
+  if (isProtectedRoute && !token) {
+    const signInUrl = new URL(`/${DEFAULT_LOCALE}/signin`, request.url);
+    signInUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(signInUrl);
+  }
+
   // Check for duplicate locales
   const segments = pathname.split('/').filter(Boolean);
   const localesInPath = segments.filter(segment => LOCALES.includes(segment));
@@ -59,10 +70,6 @@ export async function middleware(request: NextRequest) {
     const newPath = `/${lastLocale}/${cleanPathSegments.join('/')}`;
     return NextResponse.redirect(new URL(newPath, request.url));
   }
-
-  // Get authentication status
-  const token = await getToken({ req: request });
-  const isAuthenticated = !!token;
 
   // Get locale from the pathname
   const hasLocale = LOCALES.includes(segments[0]);
@@ -76,15 +83,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`/${currentLocale}/signin`, request.url));
   }
 
-  // Handle authentication redirects
-  if (!isAuthenticated && matchRoute(pathnameWithoutLocale, protectedRoutes)) {
-    const signInUrl = new URL(`/${currentLocale}/signin`, request.url);
-    signInUrl.searchParams.set('callbackUrl', `/${currentLocale}/dashboard/profile`);
-    return NextResponse.redirect(signInUrl);
-  }
-
   // Handle authenticated users trying to access auth pages
-  if (isAuthenticated && matchRoute(pathnameWithoutLocale, publicRoutes)) {
+  if (token && matchRoute(pathnameWithoutLocale, publicRoutes)) {
     return NextResponse.redirect(new URL(`/${currentLocale}/dashboard/profile`, request.url));
   }
 
