@@ -3,12 +3,15 @@ import { persist } from 'zustand/middleware'
 
 interface User {
   id: number
+  username: string
   first_name: string
   last_name: string
   email: string
   user_type: 'regular' | 'company' | 'admin'
   profile_picture_url?: string
   company_name?: string
+  city?: string
+  country?: string
 }
 
 interface UserStore {

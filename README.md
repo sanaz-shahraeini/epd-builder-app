@@ -1,36 +1,171 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div dir="rtl" align="right" style="text-align: right;">
 
-## Getting Started
+این جزوه شامل توضیحات مفصل در مورد مباحث جلسه قبل است و به صورت قدم‌به‌قدم شما را با اصول React.js آشنا می‌کند. در این متن، تمام موضوعات با زبان ساده و همراه با مثال توضیح داده شده‌اند:
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### 1. **بررسی ساختار تابع به صورت Arrow Function**
+Arrow function یکی از قابلیت‌های مدرن جاوااسکریپت است که نحوه تعریف توابع را ساده‌تر و خواناتر می‌کند.  
+ساختار:
+```javascript
+const add = (a, b) => a + b;
+```
+- اگر تابع فقط یک دستور داشته باشد، نیازی به {} و `return` نیست.
+- Arrow function به‌طور خودکار مقدار `this` را از محیط اطراف ارث‌بری می‌کند.
+
+---
+
+### 2. **نحوه ایجاد و بررسی ساختار یک Component**
+یک کامپوننت در React.js بخشی از رابط کاربری (UI) است. کامپوننت‌ها می‌توانند به دو شکل نوشته شوند:
+1. **کامپوننت تابعی (Functional Component)**:
+   ```javascript
+   const MyComponent = () => {
+       return <h1>Hello, React!</h1>;
+   };
+   ```
+2. **کامپوننت کلاسی (Class Component)**:
+   ```javascript
+   class MyComponent extends React.Component {
+       render() {
+           return <h1>Hello, React!</h1>;
+       }
+   }
+   ```
+
+---
+
+### 3. **معرفی JSX**
+JSX مخفف JavaScript XML است که به شما اجازه می‌دهد ساختار HTML را درون جاوااسکریپت بنویسید.
+مثال:
+```javascript
+const element = <h1>Hello, world!</h1>;
+```
+JSX در نهایت به کد جاوااسکریپت کامپایل می‌شود.
+
+---
+
+### 4. **بررسی قوانین پایه در JSX**
+- تمام عناصر JSX باید یک **والد** داشته باشند:
+  ```javascript
+  return (
+      <div>
+          <h1>Title</h1>
+          <p>Description</p>
+      </div>
+  );
+  ```
+- نام تگ‌ها باید مطابق استاندارد HTML یا PascalCase باشد.
+- از **curly braces `{}`** برای قرار دادن کد جاوااسکریپت استفاده کنید.
+
+---
+
+### 5. **جاوااسکریپت در JSX**
+می‌توانید مقادیر متغیرها و توابع را در JSX استفاده کنید:
+```javascript
+const name = "John";
+const element = <h1>Hello, {name}!</h1>;
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 6. **بررسی Expression و Statement و تفاوت آن‌ها**
+- **Expression**: هر چیزی که مقدار بازمی‌گرداند.
+  مثال: `2 + 2`, `name`
+- **Statement**: دستورات اجرایی که کاری انجام می‌دهند.
+  مثال: `if`, `for`
+  
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 7. **بررسی Ternary Operator و نحوه ایجاد شرط تک‌خطی**
+Ternary operator برای ساده‌سازی شرط‌ها استفاده می‌شود:
+```javascript
+const isLoggedIn = true;
+const message = isLoggedIn ? "Welcome!" : "Please log in.";
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+### 8. **بررسی و استفاده از Template Literals**
+Template literals امکان قرار دادن مقادیر متغیرها داخل رشته‌ها را می‌دهند:
+```javascript
+const name = "Ali";
+const greeting = `Hello, ${name}!`;
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 9. **بررسی کامپوننت والد (Parent)**
+کامپوننت والد حاوی سایر کامپوننت‌های فرزند است.  
+مثال:
+```javascript
+const Parent = () => {
+    return (
+        <div>
+            <Child />
+        </div>
+    );
+};
+```
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 10. **بررسی کامپوننت‌های فرزند (Children)**
+کامپوننت فرزند می‌تواند توسط والد فراخوانی شود.
+مثال:
+```javascript
+const Child = () => {
+    return <h1>Hello, Child!</h1>;
+};
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+### 11. **نحوه صدا زدن یک کامپوننت**
+کامپوننت‌ها مانند تگ‌های HTML فراخوانی می‌شوند:
+```javascript
+<Child />
+```
+
+---
+
+### 12. **معرفی اکستنشن ReacTree در VSCode**
+این اکستنشن ساختار کامپوننت‌های پروژه React را به صورت درختی نمایش می‌دهد. برای نصب:
+1. به VSCode بروید.
+2. از بخش Extensions، افزونه **React Developer Tools** را نصب کنید.
+
+---
+
+### 13. **نوشتن برنامه‌ای با کامپوننت والد و کامپوننت‌های فرزند**
+مثال:
+```javascript
+const Parent = () => {
+    return (
+        <div>
+            <Child />
+            <Child />
+        </div>
+    );
+};
+
+const Child = () => {
+    return <h1>Hello, Child!</h1>;
+};
+```
+
+---
+
+### **تمارین پیشنهادی**
+1. یک کامپوننت ساده به نام `Greeting` بسازید که یک پیام خوشامدگویی را نمایش دهد.
+2. یک برنامه بنویسید که شامل یک کامپوننت والد و دو کامپوننت فرزند باشد. در هر کدام یک متن متفاوت نمایش دهید.
+3. یک کامپوننت بسازید که از Template Literals برای نمایش یک پیام شخصی‌سازی‌شده استفاده کند.
+4. از Ternary Operator استفاده کنید تا یک پیام متفاوت بر اساس مقدار یک متغیر نشان داده شود.
+5. ساختار JSX را تمرین کنید و یک صفحه شامل یک تیتر، یک پاراگراف، و یک لیست ایجاد کنید.
+6. یک کامپوننت با نام `Counter` بسازید که دکمه‌ای برای افزایش و دکمه‌ای برای کاهش عدد داشته باشد.
+7. برنامه‌ای طراحی کنید که وضعیت (state) آنلاین یا آفلاین بودن کاربر را نشان دهد و با کلیک روی یک دکمه وضعیت تغییر کند.
+8. یک لیست از محصولات را به صورت آرایه‌ای از آبجکت‌ها تعریف کنید و با استفاده از `map` آن‌ها را در صفحه نمایش دهید.
+9. کامپوننتی طراحی کنید که شامل یک فرم با ورودی متن باشد و متن ورودی در لحظه در یک عنصر `p` نمایش داده شود.
+10. برنامه‌ای طراحی کنید که یک متن را در حالت‌های مختلف (بزرگ‌نمایی، رنگ‌های متفاوت، یا چرخش متن) با استفاده از state نمایش دهد.
+
+آیا مایلید تمرین‌های بیشتری با پیچیدگی بالاتر اضافه کنم؟
+
+</div>

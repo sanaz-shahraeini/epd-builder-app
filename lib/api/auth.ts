@@ -31,6 +31,7 @@ export interface UserProfile {
   profile?: {
     bio?: string;
     profile_picture?: string;
+    profile_picture_url?: string;
   };
 }
 
@@ -216,23 +217,23 @@ export async function getUserProfile(): Promise<UserProfile> {
     }
 
     const data = await response.json()
-    console.log('Raw profile data from API:', data)
-    
-    // Make sure we have all required fields
+    console.log('Raw profile data:', data)
+    console.log('Profile data profile:', data.profile)
+    console.log('Profile picture URL:', data.profile?.profile_picture_url)
+    console.log('Profile picture:', data.profile?.profile_picture)
+
     return {
       id: data.id,
       username: data.username,
       email: data.email,
-      first_name: data.first_name || '',
-      last_name: data.last_name || '',
-      user_type: data.user_type || 'regular',
-      company_name: data.company_name || '',
-      city: data.city || '',
-      country: data.country || '',
-      profile: {
-        ...data.profile,
-        profile_picture_url: data.profile?.profile_picture_url || '',
-      }
+      first_name: data.first_name || "",
+      last_name: data.last_name || "",
+      user_type: data.user_type || "regular",
+      company_name: data.company_name || "",
+      city: data.city || "",
+      country: data.country || "",
+      profile_picture_url: data.profile?.profile_picture_url || data.profile?.profile_picture || "",
+      profile: data.profile
     }
   } catch (error) {
     console.error('Error fetching profile:', error)

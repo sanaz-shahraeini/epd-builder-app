@@ -10,18 +10,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Eye, EyeOff, Camera, Menu, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Camera, Menu, Loader2, Search, Users, X } from 'lucide-react'
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { useRouter } from '@/i18n/navigation'
-import { getUserProfile, updateUserProfile, getCompanyUsers, type UserProfile } from "@/lib/api/auth"
+import { getUserProfile, updateUserProfile, type UserProfile } from "@/lib/api/auth"
 import { useToast } from "@/components/ui/use-toast"
 import { useState, useEffect, useRef } from "react"
 import { ModeToggle } from "@/components/mode-toggle"
-import { Sidebar } from "@/components/sidebar"
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { signOut, useSession } from "next-auth/react"
 import { useUserStore } from '@/lib/store/user'
+import { useUsers } from "@/lib/context/UsersContext"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Sidebar } from "@/components/sidebar"
 
 const tabs = ["myEPDs", "inbox", "dataDirectory", "myProfile"] as const
 
@@ -230,9 +244,13 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string>("")
   const [avatarKey, setAvatarKey] = useState(0)
-  const [users, setUsers] = useState<UserProfile[]>([])
-  const [usersLoading, setUsersLoading] = useState(false)
-  const [usersError, setUsersError] = useState<string | null>(null)
+  const { users, isLoading: isLoadingUsers } = useUsers()
+  const [searchQuery, setSearchQuery] = useState("")
+  const filteredUsers = users.filter(user =>
+    user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.job_title?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -268,6 +286,9 @@ export default function ProfilePage() {
 
   const { updateUser } = useUserStore()
 
+  const { data: session } = useSession()
+  const user = useUserStore((state) => state.user)
+
   const [originalProfile, setOriginalProfile] = useState<UserProfile | null>(null)
 
   const [profileVersion, setProfileVersion] = useState(0)
@@ -283,12 +304,12 @@ export default function ProfilePage() {
       const profile = await getUserProfile()
       console.log('Fetched profile data:', profile)
 
-      // Redirect regular users to a different page
-      if (profile.user_type === 'regular') {
-        console.log('Regular user detected, redirecting...')
-        router.push('/dashboard/coming-soon')
-        return
-      }
+      // // Redirect regular users to a different page
+      // if (profile.user_type === 'regular') {
+      //   console.log('Regular user detected, redirecting...')
+      //   router.push('/dashboard/coming-soon')
+      //   return
+      // }
 
       const profileData = {
         id: profile.id,
@@ -413,7 +434,7 @@ export default function ProfilePage() {
         last_name: updatedProfile.last_name || "",
         email: updatedProfile.email || "",
         company_name: updatedProfile.company_name || "",
-        profile_picture_url: updatedProfile.profile?.profile_picture_url ? 
+        profile_picture: updatedProfile.profile?.profile_picture_url ? 
           `${updatedProfile.profile.profile_picture_url}?t=${Date.now()}` : undefined
       })
 
@@ -501,40 +522,6 @@ export default function ProfilePage() {
     }))
   }
 
-  // Fetch company users
-  const fetchUsers = async () => {
-    try {
-      setUsersLoading(true);
-      const data = await getCompanyUsers();
-      console.log('Fetched users:', data);
-      
-      if (Array.isArray(data)) {
-        setUsers(data);
-      } else {
-        console.error('Unexpected users data format:', data);
-        setUsers([]);
-        setUsersError('Invalid data format received');
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      setUsers([]);
-      setUsersError(error instanceof Error ? error.message : 'Failed to fetch users');
-    } finally {
-      setUsersLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (formData.user_type === 'company') {
-      fetchUsers();
-    } else {
-      setUsers([]);
-      setUsersError(null);
-    }
-  }, [formData.user_type]);
-
-
-
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -558,317 +545,167 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50/50 dark:bg-black/50">
-      {/* Desktop Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 hidden md:block">
-        <Sidebar className="h-full" />
-      </div>
-
-      {/* Mobile Sidebar */}
-      <div 
-        ref={mobileMenuRef}
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 transform transition-transform duration-200 ease-in-out md:hidden",
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <Sidebar className="h-full" />
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 md:ml-64">
-        <header className="sticky top-0 z-40 bg-white/95 dark:bg-black/95 backdrop-blur-sm border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center h-14 px-4 md:px-8">
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors md:hidden"
-              aria-label="Open menu"
+    <div className="space-y-6">
+      {/* Avatar Section */}
+      <div className="flex justify-center">
+        <div className="relative">
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+          <div className="relative">
+            <Avatar 
+              className="h-20 w-20 ring-4 ring-white dark:ring-gray-800 shadow-lg cursor-pointer"
+              onClick={handleAvatarClick}
             >
-              <Menu className="w-5 h-5 text-gray-500" />
-            </button>
-            <div className="flex items-center gap-2.5 ml-2 md:ml-0">
-              <Avatar className="h-8 w-8 ring-2 ring-gray-50 dark:ring-gray-800">
-                <AvatarImage src={avatarUrl || "/placeholder.svg"} />
-                <AvatarFallback className="bg-gray-100 dark:bg-gray-800">
+              {avatarUrl ? (
+                <AvatarImage 
+                  src={avatarUrl}
+                  alt="Profile picture"
+                  key={avatarKey}
+                />
+              ) : (
+                <AvatarFallback className="text-lg">
                   {(formData.first_name?.[0] || "U") + (formData.last_name?.[0] || "N")}
                 </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {formData.first_name} {formData.last_name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {formData.user_type === 'company' ? 'Company User' : formData.user_type === 'admin' ? 'Admin User' : 'Regular User'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 ml-auto">
-              <div className="flex items-center">
-                <LanguageSwitcher />
-                <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-2" />
-                <ModeToggle />
-              </div>
+              )}
+            </Avatar>
+            <div className="absolute -bottom-2 -right-2 bg-[#8CC63F] text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
+              <Camera className="w-4 h-4" />
             </div>
           </div>
-          <nav className="px-4 md:px-8 overflow-x-auto">
-            <div className="flex min-w-max">
-              {tabs.map((tab) => (
+        </div>
+      </div>
+
+      {/* Form Section */}
+      <div className="space-y-6">
+        <div className="bg-white dark:bg-black rounded-lg shadow-sm p-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold">{p('personalInfo')}</h2>
+          </div>
+          <div className="grid gap-6">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {p('firstName')}
+                </label>
+                <Input 
+                  className="w-full bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
+                  value={formData.first_name || ''}
+                  onChange={(e) => handleInputChange('first_name', e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {p('lastName')}
+                </label>
+                <Input 
+                  className="w-full bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
+                  value={formData.last_name || ''}
+                  onChange={(e) => handleInputChange('last_name', e.target.value)}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                {p('email')}
+              </label>
+              <Input 
+                className="w-full bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
+                type="email"
+                value={formData.email || ''}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                {p('country')}
+              </label>
+              <Select 
+                value={formData.country || ''} 
+                onValueChange={(value) => handleInputChange('country', value)}
+              >
+                <SelectTrigger className="w-full bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700">
+                  <SelectValue placeholder={p('selectCountry')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map((country) => (
+                    <SelectItem key={country.value} value={country.value}>
+                      {country.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                {p('city')}
+              </label>
+              <Input 
+                className="w-full bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
+                value={formData.city || ''}
+                onChange={(e) => handleInputChange('city', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                {p('password')}
+              </label>
+              <div className="relative">
+                <Input 
+                  type={showPassword ? "text" : "password"}
+                  className="w-full bg-gray-50 border-gray-100 pr-10 dark:bg-gray-900/50 dark:border-gray-700" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled
+                />
                 <button
-                  key={tab}
-                  onClick={() => {
-                    if (tab === "inbox") {
-                      router.push('/dashboard/inbox')
-                    } else {
-                      setActiveTab(tab)
-                    }
-                  }}
-                  className={`text-sm py-3.5 px-3 md:px-4 relative transition-colors hover:text-teal-500 ${
-                    activeTab === tab
-                      ? "text-teal-600 dark:text-teal-500 font-medium"
-                      : "text-gray-600 dark:text-gray-400"
-                  }`}
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
                 >
-                  {n(tab)}
-                  {activeTab === tab && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600 dark:bg-teal-500" />
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
                   )}
                 </button>
-              ))}
-            </div>
-          </nav>
-        </header>
-
-        <main className="p-4 md:p-8">
-          <div className="flex flex-col lg:flex-row gap-6">
-            <div className="flex-1">
-              <div className="space-y-6">
-                {/* Avatar Section */}
-                <div className="relative group mb-8 md:mb-12">
-                  <div className="flex items-center justify-center">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
-                    <Avatar 
-                      className="h-20 md:h-28 w-20 md:w-28 ring-4 ring-white dark:ring-gray-800 shadow-lg relative cursor-pointer"
-                      onClick={handleAvatarClick}
-                    >
-                      {avatarUrl ? (
-                        <AvatarImage 
-                          src={avatarUrl}
-                          alt="Profile picture"
-                          key={avatarKey}
-                        />
-                      ) : (
-                        <AvatarFallback className="text-xl">
-                          {(formData.first_name?.[0] || "U") + (formData.last_name?.[0] || "N")}
-                        </AvatarFallback>
-                      )}
-                      <div className="absolute -bottom-2 -right-2 bg-[#8CC63F] text-white text-xs rounded-full h-6 w-6 flex items-center justify-center">
-                        <Camera className="w-4 h-4" />
-                      </div>
-                    </Avatar>
-                  </div>
-                </div>
-
-                {/* Form Section */}
-                <div className="space-y-8">
-                  <div className="bg-white dark:bg-black rounded-2xl shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-8">
-                      <h2 className="text-lg font-semibold">{p('personalInfo')}</h2>
-                    </div>
-                    <div className="grid gap-6">
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2">
-                            {p('firstName')}
-                          </label>
-                          <Input 
-                            className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
-                            value={formData.first_name || ''}
-                            onChange={(e) => handleInputChange('first_name', e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-2">
-                            {p('lastName')}
-                          </label>
-                          <Input 
-                            className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
-                            value={formData.last_name || ''}
-                            onChange={(e) => handleInputChange('last_name', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">
-                          {p('email')}
-                        </label>
-                        <Input 
-                          className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
-                          type="email"
-                          value={formData.email || ''}
-                          onChange={(e) => handleInputChange('email', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">
-                          {p('country')}
-                        </label>
-                        <Select 
-                          value={formData.country || ''} 
-                          onValueChange={(value) => handleInputChange('country', value)}
-                        >
-                          <SelectTrigger className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700">
-                            <SelectValue placeholder={p('selectCountry')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {countries.map((country) => (
-                              <SelectItem key={country.value} value={country.value}>
-                                {country.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">
-                          {p('city')}
-                        </label>
-                        <Input 
-                          className="bg-gray-50 border-gray-100 dark:bg-gray-900/50 dark:border-gray-700" 
-                          value={formData.city || ''}
-                          onChange={(e) => handleInputChange('city', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-2">
-                          {p('password')}
-                        </label>
-                        <div className="relative">
-                          <Input 
-                            type={showPassword ? "text" : "password"}
-                            className="bg-gray-50 border-gray-100 pr-10 dark:bg-gray-900/50 dark:border-gray-700" 
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white dark:bg-black rounded-2xl shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-8">
-                      <h2 className="text-lg font-semibold">{p('passwordManager')}</h2>
-                    </div>
-                    <div className="space-y-4">
-                      <button
-                        className="text-teal-500 text-sm hover:underline"
-                      >
-                        {p('changePassword')}
-                      </button>
-                    </div>
-                  </div>
-
-                  <Button 
-                    className="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium" 
-                    onClick={handleSubmit}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>{p('saving')}</span>
-                      </div>
-                    ) : (
-                      p('saveChanges')
-                    )}
-                  </Button>
-                </div>
               </div>
             </div>
-
-            {/* Right side - User List */}
-            <div className="w-full lg:w-[300px] bg-white dark:bg-black rounded-2xl shadow-sm p-4 md:p-6 flex-shrink-0 h-fit order-first lg:order-last">
-              {/* Company Header */}
-              <div className="flex items-center gap-3 mb-6">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={avatarUrl || "/placeholder.svg"} />
-                  <AvatarFallback className="bg-gray-100">
-                    {(formData.first_name?.[0] || "U") + (formData.last_name?.[0] || "N")}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-base font-medium">{formData.company_name || "Company Name"}</h2>
-                  <p className="text-medium-gray-500">Users User</p>
-                </div>
-              </div>
-              
-              <div className="space-y-3 md:space-y-4">
-                {usersLoading ? (
-                  // Loading skeleton
-                  [...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-full bg-gray-100 animate-pulse" />
-                      <div className="flex-1">
-                        <div className="h-4 w-24 bg-gray-100 rounded animate-pulse mb-1" />
-                        <div className="h-3 w-16 bg-gray-100 rounded animate-pulse" />
-                      </div>
-                    </div>
-                  ))
-                ) : users.map((user) => (
-                  <div key={user.id} className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.profile?.profile_picture || "/placeholder.svg"} />
-                      <AvatarFallback className="bg-gray-100">
-                        {(user.first_name?.[0] || "U") + (user.last_name?.[0] || "N")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {user.first_name} {user.last_name}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {user.job_title || "Position"}
-                      </p>
-                    </div>
-                    {user.id === formData.id && (
-                      <span className="text-xs text-teal-500 font-medium flex-shrink-0">
-                        You
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-              
-              <Button 
-                className="w-full mt-6 bg-teal-600 hover:bg-teal-500 text-white font-medium" 
-                onClick={() => console.log('Add new user')}
-              >
-                + Add New User
-              </Button>
-            </div>
-
-            {/* Users List */}
-        
           </div>
-        </main>
+        </div>
+
+        <div className="bg-white dark:bg-black rounded-lg shadow-sm p-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold">{p('passwordManager')}</h2>
+          </div>
+          <div className="space-y-4">
+            <button
+              className="text-teal-500 text-sm hover:underline"
+            >
+              {p('changePassword')}
+            </button>
+          </div>
+        </div>
+
+        <Button 
+          className="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium" 
+          onClick={handleSubmit}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+              <span>{p('saving')}</span>
+            </div>
+          ) : (
+            p('saveChanges')
+          )}
+        </Button>
       </div>
     </div>
-  )
+  );
 }

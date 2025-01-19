@@ -93,15 +93,8 @@ export const nextAuthOptions: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Handle redirection based on user type
-      if (url.startsWith(baseUrl)) {
-        const token = await fetch(`${baseUrl}/api/auth/session`).then(res => res.json());
-        if (token?.user?.user_type === 'regular') {
-          return `${baseUrl}/dashboard/coming-soon`;
-        }
-        return url;
-      }
-      return baseUrl;
+      // Simplified redirect logic
+      return url.startsWith(baseUrl) ? url : baseUrl;
     }
   },
   pages: {

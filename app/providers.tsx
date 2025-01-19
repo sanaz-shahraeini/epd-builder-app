@@ -25,6 +25,9 @@ export function Providers({
   // Fallback to 'en' if no locale is provided
   const safeLocale = locale || 'en';
 
+  console.log('Providers - Locale:', safeLocale)
+  console.log('Providers - Messages:', Object.keys(messages))
+
   return (
     <ErrorBoundary>
       <SessionProvider session={session}>

@@ -28,30 +28,22 @@ export function Sidebar({ className }: SidebarProps) {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 bg-white dark:bg-black border-r dark:border-gray-800">
-            <div className="flex h-full flex-col">
-              <div className="p-6">
-                <img src="/assets/images/logo.png" alt="TerraNEXT" className="h-8" />
-              </div>
-              <SidebarContent />
-            </div>
+            <SidebarContent isMobile={true} />
           </SheetContent>
         </Sheet>
         <ModeToggle />
       </div>
 
       {/* Desktop Sidebar */}
-      <div className={`hidden md:block w-64 h-screen bg-white dark:bg-black border-r dark:border-gray-800 flex-col fixed ${className}`}>
-        <div className="p-6">
-          <img src="/assets/images/logo.png" alt="TerraNEXT" className="h-8" />
-        </div>
-        <SidebarContent />
+      <div className={`hidden md:block w-64 h-screen bg-white dark:bg-black border-r dark:border-gray-800 fixed ${className}`}>
+        <SidebarContent isMobile={false} />
       </div>
     </>
   )
 }
 
 // Extract sidebar content to a separate component for reuse
-function SidebarContent() {
+function SidebarContent({ isMobile }: { isMobile?: boolean }) {
   const router = useRouter()
   const pathname = usePathname()
   const n = useTranslations('navigation')
@@ -65,18 +57,23 @@ function SidebarContent() {
     // Map German paths to their English equivalents for checking
     const germanToEnglishPaths = {
       '/dashboard/posteingang': '/dashboard/inbox',
-      '/dashboard/profil': '/dashboard/profile'
+      '/dashboard/profil': '/dashboard/profile',
+      '/dashboard/epd-vorschau': '/dashboard/epd-preview'
     };
 
     // Get the current path without locale prefix
     const currentPath = pathname.replace(/^\/[a-z]{2}/, '');
     
+    // Special handling for administrative section
     if (path === '/dashboard/profile') {
-      // Consider both profile and inbox (and their German equivalents) as part of administrative section
+      // Consider profile, inbox, and EPD pages as part of administrative section
       return currentPath.includes('/dashboard/profile') || 
              currentPath.includes('/dashboard/inbox') ||
+             currentPath.includes('/dashboard/epd') ||
+             currentPath.includes('/dashboard/epd-preview') ||
              currentPath.includes('/dashboard/profil') ||
-             currentPath.includes('/dashboard/posteingang');
+             currentPath.includes('/dashboard/posteingang') ||
+             currentPath.includes('/dashboard/epd-vorschau');
     }
 
     // Check if current path matches either English or German version
@@ -112,8 +109,18 @@ function SidebarContent() {
   };
 
   return (
-    <>
-      <div className="p-4 flex items-center space-x-3">
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className={`${isMobile ? 'p-6' : 'p-6'}`}>
+        <img 
+          src="/assets/images/logo.png" 
+          alt="TerraNEXT" 
+          className="h-8" 
+        />
+      </div>
+
+      {/* User Info */}
+      <div className={`${isMobile ? 'p-4' : 'p-4'} flex items-center space-x-3`}>
         <Avatar className="w-8 h-8">
           {user?.profile_picture_url ? (
             <AvatarImage 
@@ -137,6 +144,7 @@ function SidebarContent() {
         </div>
       </div>
 
+      {/* Navigation */}
       <nav className="flex-1 p-4">
         <div className="space-y-2">
           <Link 
@@ -177,7 +185,8 @@ function SidebarContent() {
           </Link>
         </div>
 
-        <div className="absolute bottom-4 left-4 right-4">
+        {/* Logout Button */}
+        <div className={`absolute bottom-4 left-4 right-4 ${isMobile ? '' : ''}`}>
           <button 
             onClick={handleLogout}
             className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg"
@@ -187,6 +196,6 @@ function SidebarContent() {
           </button>
         </div>
       </nav>
-    </>
+    </div>
   )
 }

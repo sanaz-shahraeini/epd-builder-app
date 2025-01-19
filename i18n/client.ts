@@ -16,8 +16,11 @@ export default createI18nClient({
   },
   // Load messages for the current locale
   getMessages: async (locale) => {
+    console.log('Attempting to load messages for locale:', locale);
     try {
-      return (await import(`../messages/${locale}.json`)).default;
+      const messages = (await import(`../messages/${locale}.json`)).default;
+      console.log('Loaded messages keys:', Object.keys(messages));
+      return messages;
     } catch (error) {
       console.error(`Failed to load messages for locale ${locale}:`, error);
       return {};
