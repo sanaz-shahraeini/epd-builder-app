@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { IoMailOutline } from "react-icons/io5";
@@ -167,6 +167,7 @@ function ForgotPassword({ open, onClose, setShowSignIn }: ForgotPasswordProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden">
+        <DialogTitle className="sr-only">{t("title")}</DialogTitle>
         <div className="p-6 bg-gradient-to-b from-[#42B7B0]/10 to-transparent">
           <AnimatePresence mode="wait">
             <motion.div

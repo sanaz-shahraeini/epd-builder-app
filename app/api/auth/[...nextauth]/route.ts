@@ -1,3 +1,13 @@
+// Extend the built-in User type
+declare module "next-auth" {
+  interface User {
+    accessToken?: string;
+    refreshToken?: string;
+    user_type?: string;
+    accessTokenExpires?: number;
+  }
+}
+
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -73,17 +83,53 @@ export const nextAuthOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
+        // Initial sign in
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.user_type = user.user_type;
+        token.accessTokenExpires = Date.now() + 2 * 60 * 60 * 1000; // 2 hours
       }
-      return token;
+
+      // Return previous token if the access token has not expired
+      if (Date.now() < token.accessTokenExpires) {
+        return token;
+      }
+
+      // Access token expired, try to refresh it
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/token/refresh/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            refresh: token.refreshToken,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to refresh token');
+        }
+
+        const data = await response.json();
+        
+        return {
+          ...token,
+          accessToken: data.access,
+          accessTokenExpires: Date.now() + 2 * 60 * 60 * 1000, // 2 hours
+        };
+      } catch (error) {
+        console.error('Error refreshing access token:', error);
+        return { ...token, error: 'RefreshAccessTokenError' };
+      }
     },
     async session({ session, token }) {
       if (token) {
         session.accessToken = token.accessToken;
+        session.refreshToken = token.refreshToken;
+        session.error = token.error;
         session.user = {
           ...session.user,
           id: token.id,

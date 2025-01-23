@@ -202,29 +202,82 @@
       "invite": "Mitglied einladen",
       "position": "Position"
     },
-    "profile": {
-      "title": "Benutzerprofil",
-      "addNewUser": "Neuen Benutzer hinzufügen",
-      "editProfile": "Profil bearbeiten",
-      "saveChanges": "Änderungen speichern",
-      "cancel": "Abbrechen",
-      "userName": "Benutzername",
-      "firstName": "Vorname", 
-      "lastName": "Nachname",
-      "email": "E-Mail-Adresse",
-      "companyName": "Firmenname",
-      "jobTitle": "Berufsbezeichnung",
-      "phoneNumber": "Telefonnummer",
-      "position": "Position"
-    },
     "Profile": {
+      "title": "Profil",
+      "description": "Verwalten Sie Ihre Profilinformationen",
+      "personalInfo": "Persönliche Informationen",
       "userName": "Benutzername",
       "firstName": "Vorname",
       "lastName": "Nachname",
-      "email": "E-Mail-Adresse",
+      "email": "E-Mail",
+      "country": "Land",
+      "city": "Stadt",
+      "password": "Passwort",
+      "currentPassword": "Aktuelles Passwort",
+      "newPassword": "Neues Passwort",
+      "confirmPassword": "Passwort bestätigen",
+      "changePassword": "Passwort ändern",
+      "passwordManager": "Passwort-Manager",
+      "savePassword": "Passwort speichern",
+      "cancel": "Abbrechen",
+      "saveChanges": "Änderungen speichern",
+      "saving": "Speichern...",
+      "loadingProfile": "Profil wird geladen...",
+      "selectCountry": "Land auswählen",
       "companyName": "Firmenname",
-      "jobTitle": "Berufsbezeichnung",
-      "phoneNumber": "Telefonnummer"
+      "users": "Benutzer",
+      "position": "Position",
+      "new": "Neu",
+      "addNewUser": "Neuen Benutzer hinzufügen",
+      "userManagement": "Benutzerverwaltung",
+      "success": {
+        "profileUpdated": "Profil erfolgreich aktualisiert",
+        "avatarUpdated": "Avatar erfolgreich aktualisiert",
+        "avatarRemoved": "Avatar erfolgreich entfernt",
+        "passwordChanged": "Passwort erfolgreich geändert",
+        "userAdded": "Benutzer erfolgreich hinzugefügt",
+        "userRemoved": "Benutzer erfolgreich entfernt"
+      },
+      "errors": {
+        "updateFailed": "Profilaktualisierung fehlgeschlagen",
+        "avatarUploadFailed": "Avatar-Upload fehlgeschlagen",
+        "avatarRemoveFailed": "Avatar-Entfernung fehlgeschlagen",
+        "passwordChangeFailed": "Passwortänderung fehlgeschlagen",
+        "currentPasswordIncorrect": "Aktuelles Passwort ist falsch",
+        "passwordsDoNotMatch": "Neue Passwörter stimmen nicht überein",
+        "networkError": "Netzwerkfehler aufgetreten",
+        "userAddFailed": "Benutzer konnte nicht hinzugefügt werden",
+        "userRemoveFailed": "Benutzer konnte nicht entfernt werden"
+      },
+      "validation": {
+        "firstName": {
+          "required": "Vorname ist erforderlich"
+        },
+        "lastName": {
+          "required": "Nachname ist erforderlich"
+        },
+        "email": {
+          "required": "E-Mail ist erforderlich",
+          "invalid": "Ungültige E-Mail-Adresse"
+        },
+        "country": {
+          "required": "Land ist erforderlich"
+        },
+        "city": {
+          "required": "Stadt ist erforderlich"
+        },
+        "currentPassword": {
+          "required": "Aktuelles Passwort ist erforderlich"
+        },
+        "newPassword": {
+          "required": "Neues Passwort ist erforderlich",
+          "min": "Passwort muss mindestens 8 Zeichen lang sein"
+        },
+        "confirmPassword": {
+          "required": "Bitte bestätigen Sie Ihr Passwort",
+          "match": "Passwörter müssen übereinstimmen"
+        }
+      }
     },
     "navigation": {
       "dashboard": {
@@ -361,5 +414,33 @@
       "today": "Heute",
       "yesterday": "Gestern",
       "subject": "Betreff"
+    },
+    "EPD": {
+      "filters": {
+        "classification": {
+          "placeholder": "Klassifikation",
+          "all": "Alle Klassifikationen"
+        },
+        "location": {
+          "placeholder": "Standort",
+          "all": "Alle Standorte"
+        },
+        "year": {
+          "placeholder": "Jahr",
+          "all": "Alle Jahre",
+          "newest": "Neueste",
+          "oldest": "Älteste"
+        },
+        "search": {
+          "placeholder": "Nach Produktnamen suchen..."
+        }
+      },
+      "card": {
+        "verified": "Verifiziert",
+        "viewPDF": "PDF anzeigen",
+        "noPDF": "Kein PDF verfügbar"
+      },
+      "loading": "EPD-Daten werden geladen...",
+      "noResults": "Keine Ergebnisse gefunden"
     }
 }

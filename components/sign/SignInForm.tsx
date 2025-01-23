@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { signIn, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useLocale } from "next-intl";
 import SignUpForm from "./SignUpForm";
@@ -22,6 +22,7 @@ import { IoMailOutline, IoKeyOutline, IoPersonOutline, IoAtCircleOutline } from 
 import { FaGoogle } from "react-icons/fa";
 import { getUserProfile } from "@/lib/api/auth";
 import { useUserStore } from "@/lib/store/user";
+import { useToast } from "@/components/ui/use-toast";
 
 interface SignInFormProps {
   open: boolean;
@@ -59,13 +60,24 @@ function SignInForm({
   const [countdown, setCountdown] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
   const { setUser } = useUserStore();
+  const { toast } = useToast();
 
   // Define Zod schema for form validation
   const SignInSchema = z.object({
     username: z.string().trim().min(1, { message: t("validation.username.required") }),
     password: z.string().trim().min(1, { message: t("validation.password.required") }),
-    email: z.string().optional(),
+    email: authMethod === "email" 
+      ? z.string().email({ message: t("validation.email.invalid") })
+      : z.string().optional(),
     verificationCode: z.string().optional()
+  }).superRefine((data, ctx) => {
+    if (authMethod === "email" && !data.email) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: t("validation.email.required"),
+        path: ["email"]
+      });
+    }
   });
 
   const {
@@ -74,18 +86,21 @@ function SignInForm({
     formState: { errors },
     reset,
     getValues,
+    watch,
   } = useForm<z.infer<typeof SignInSchema>>({
     resolver: zodResolver(SignInSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      email: "",
-      verificationCode: ""
-    }
+    defaultValues,
+    mode: "onChange"
   });
+
+  const emailValue = watch("email");
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
   }, []);
 
   useEffect(() => {
@@ -118,20 +133,19 @@ function SignInForm({
       console.log('Attempting sign in with:', { username: values.username });
       
       const result = await signIn("credentials", {
-        redirect: true,
+        redirect: false,
         username: values.username.trim(),
         password: values.password.trim(),
-        callbackUrl: '/dashboard/profile'  // NextAuth redirect callback will handle user type redirection
       });
 
       if (result?.error) {
         console.error('Sign-In Error:', result.error);
-        let errorMessage = t("invalidCredentials");
+        let errorMessage = t("errors.invalidCredentials");
         
         if (result.error === "CredentialsSignin" || result.error.includes("Invalid credentials")) {
-          errorMessage = t("invalidCredentials");
+          errorMessage = t("errors.invalidCredentials");
         } else if (result.error === "Please provide both username and password") {
-          errorMessage = t("validation.credentials.required");
+          errorMessage = t("errors.missingCredentials");
         } else {
           console.error('Unknown error:', result.error);
           errorMessage = t("errors.unknown");
@@ -163,13 +177,21 @@ function SignInForm({
             
             console.log('Setting user data in store after login:', userData)
             setUser(userData)
-          }
 
-          // Redirect based on user type
-          if (userProfile.user_type === "regular") {
-            router.push("/dashboard/coming-soon")
-          } else {
-            router.push("/dashboard")
+            // Check user type and handle accordingly
+            if (userProfile.user_type === "regular") {
+              toast({
+                variant: "destructive",
+                title: t("errors.accessDenied"),
+                description: t("errors.regularUserNotAllowed"),
+                duration: 5000,
+              });
+              // Sign out the user since they're not allowed
+              await signOut({ redirect: false });
+              return;
+            } else {
+              router.push("/dashboard")
+            }
           }
         } catch (error) {
           console.error('Error fetching user profile:', error)
@@ -199,7 +221,7 @@ function SignInForm({
       });
     } catch (error) {
       console.error("Google sign-in error:", error);
-      setMessage({ text: t("networkError"), type: "error" });
+      setMessage({ text: t("errors.networkError"), type: "error" });
     } finally {
       setLoading(false);
     }
@@ -213,66 +235,165 @@ function SignInForm({
     reset(defaultValues);
   };
 
+  const handleEmailSubmit = async (values: z.infer<typeof SignInSchema>) => {
+    console.log("handleEmailSubmit called with values:", values);
+    
+    if (!values.email) {
+      setMessage({
+        type: "error",
+        text: t("validation.email.required")
+      });
+      return;
+    }
+
+    setMessage(null);
+    setLoading(true);
+    
+    try {
+      if (!verificationSent) {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const requestUrl = `${apiUrl}/users/password-reset/request/`;
+        console.log('Full Request URL:', requestUrl);
+
+        try {
+          const response = await fetch(requestUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ email: values.email }),
+          });
+
+          console.log('Response status:', response.status);
+          const responseText = await response.text();
+          console.log('Raw response:', responseText);
+          
+          let data;
+          try {
+            data = JSON.parse(responseText);
+            console.log('Parsed response data:', data);
+          } catch (e) {
+            console.error('Error parsing JSON:', e);
+            throw new Error('Invalid response from server');
+          }
+
+          if (response.ok) {
+            setVerificationSent(true);
+            setCountdown(300); // 5 minutes countdown
+            setMessage({
+              type: "success",
+              text: t("success.verificationEmailSent")
+            });
+          } else {
+            throw new Error(data.message || data.detail || t("errors.emailNotFound"));
+          }
+        } catch (error) {
+          console.error('Fetch error:', error);
+          throw error;
+        }
+      } else {
+        const validateUrl = `${process.env.NEXT_PUBLIC_API_URL}/users/password-reset/validate/`;
+        console.log('Validate URL:', validateUrl);
+
+        const validateResponse = await fetch(validateUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: values.email,
+            code: values.verificationCode
+          }),
+        });
+
+        const validateText = await validateResponse.text();
+        console.log('Raw validate response:', validateText);
+        
+        let validateData;
+        try {
+          validateData = JSON.parse(validateText);
+          console.log('Parsed validate data:', validateData);
+        } catch (e) {
+          console.error('Error parsing validate JSON:', e);
+          throw new Error('Invalid response from server');
+        }
+
+        if (validateResponse.ok) {
+          // Code is valid, proceed with password reset
+          router.push({
+            pathname: '/reset-password',
+            query: { 
+              email: values.email,
+              code: values.verificationCode
+            }
+          });
+        } else {
+          throw new Error(validateData.message || validateData.detail || t("errors.invalidCode"));
+        }
+      }
+    } catch (error) {
+      console.error('Email verification error:', error);
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : t("errors.networkError")
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleResendCode = async () => {
-    if (loading) return;
+    if (loading || !getValues("email")) return;
 
     try {
       setLoading(true);
       setMessage(null);
 
-      // Ensure email is validated before sending
-      const emailValidation = SignInSchema.shape.email;
-      const emailValue = getValues("email");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const requestUrl = `${apiUrl}/users/password-reset/request/`;
+      console.log('Resend code URL:', requestUrl);
 
-      if (!emailValue) {
-        setMessage({
-          type: "error",
-          text: t("validation.email.required")
-        });
-        return;
-      }
-
-      // Request a new verification code
-      const response = await fetch("http://localhost:8000/users/request-verification/", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({ 
-          email: emailValue 
-        }),
+        credentials: 'include',
+        body: JSON.stringify({ email: getValues("email") }),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      console.log('Raw resend response:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('Parsed resend data:', data);
+      } catch (e) {
+        console.error('Error parsing resend JSON:', e);
+        throw new Error('Invalid response from server');
+      }
 
       if (response.ok) {
         setVerificationSent(true);
+        setCountdown(300); // Reset 5-minute countdown
         setMessage({ 
           type: "success", 
-          text: t("codeSentAgain") 
+          text: t("success.verificationEmailSent") 
         });
-        setCountdown(300); // Reset 5-minute countdown
-        const timer = setInterval(() => {
-          setCountdown((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
       } else {
-        setMessage({ 
-          type: "error", 
-          text: data.message || t("resendError") 
-        });
+        throw new Error(data.message || data.detail || t("errors.resendError"));
       }
     } catch (error) {
       console.error("Resend verification code error:", error);
       setMessage({ 
-        text: t("networkError"), 
-        type: "error" 
+        type: "error", 
+        text: error instanceof Error ? error.message : t("errors.networkError")
       });
     } finally {
       setLoading(false);
@@ -281,10 +402,10 @@ function SignInForm({
 
   const renderField = (name: keyof z.infer<typeof SignInSchema>, label: string, type: string = "text", icon: React.ReactNode, disabled: boolean = false) => {
     const placeholderKeys: Record<keyof z.infer<typeof SignInSchema>, string> = {
-      email: "emailPlaceholder",
-      username: "usernamePlaceholder",
-      password: "passwordPlaceholder",
-      verificationCode: "verificationCodePlaceholder"
+      email: "placeholders.email",
+      username: "placeholders.username",
+      password: "placeholders.password",
+      verificationCode: "placeholders.verificationCode"
     };
 
     return (
@@ -297,7 +418,7 @@ function SignInForm({
             disabled={disabled}
             placeholder={t(placeholderKeys[name])}
             className={cn("pl-10", errors[name] && "border-red-500")}
-     
+            {...register(name)}
           />
           <div className="absolute left-3 top-3 h-5 w-5 text-teal-500">
             {icon}
@@ -377,7 +498,7 @@ function SignInForm({
                       <Input
                         id="username"
                         type="text"
-                        placeholder={t("usernamePlaceholder")}
+                        placeholder={t("placeholders.username")}
                         {...register("username")}
                         className={cn(
                           "w-full pl-10",
@@ -401,7 +522,7 @@ function SignInForm({
                       <Input
                         id="password"
                         type="password"
-                        placeholder={t("passwordPlaceholder")}
+                        placeholder={t("placeholders.password")}
                         {...register("password")}
                         className={cn(
                           "w-full pl-10",
@@ -456,24 +577,66 @@ function SignInForm({
               </TabsContent>
 
               <TabsContent value="email" className="space-y-4">
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  {renderField("email", t("email"), "email", <IoMailOutline />)}
+                <form 
+                  onSubmit={(e) => {
+                    console.log("Form submitted"); 
+                    handleSubmit(handleEmailSubmit)(e);
+                  }} 
+                  className="space-y-4"
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="email">{t("email")}</Label>
+                    <div className="relative">
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder={t("placeholders.email")}
+                        className={cn(
+                          "w-full pl-10",
+                          errors.email && "border-destructive"
+                        )}
+                        {...register("email")}
+                      />
+                      <IoMailOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                    </div>
+                    {errors.email && (
+                      <p className="text-destructive text-sm mt-1">
+                        {errors.email.message}
+                      </p>
+                    )}
+                  </div>
+
                   {verificationSent && (
-                    renderField(
-                      "verificationCode",
-                      t("verificationCode"),
-                      "text",
-                      <IoKeyOutline />,
-                      countdown > 0
-                    )
+                    <div className="space-y-2">
+                      <Label htmlFor="verificationCode">{t("verificationCode")}</Label>
+                      <div className="relative">
+                        <Input
+                          id="verificationCode"
+                          type="text"
+                          placeholder={t("placeholders.verificationCode")}
+                          className={cn(
+                            "w-full pl-10",
+                            errors.verificationCode && "border-destructive"
+                          )}
+                          {...register("verificationCode")}
+                        />
+                        <IoKeyOutline className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                      </div>
+                      {errors.verificationCode && (
+                        <p className="text-destructive text-sm mt-1">
+                          {errors.verificationCode.message}
+                        </p>
+                      )}
+                    </div>
                   )}
 
                   <Button
                     type="submit"
                     className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                    disabled={loading || (verificationSent && countdown === 0)}
+                    disabled={loading || !emailValue || (verificationSent && countdown === 0)}
+                    onClick={() => console.log("Submit button clicked")} 
                   >
-                    {loading ? t("signingIn") : (verificationSent ? t("verifyCode") : t("sendCode"))}
+                    {loading ? t("processing") : (verificationSent ? t("verifyCode") : t("sendCode"))}
                   </Button>
 
                   {verificationSent && countdown > 0 && (

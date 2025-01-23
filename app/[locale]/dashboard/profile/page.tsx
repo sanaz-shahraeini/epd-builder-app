@@ -10,11 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Eye, EyeOff, Camera, Menu, Loader2, Search, Users, X } from 'lucide-react'
+import { Eye, EyeOff, Camera, Menu, Loader2, Search, Users, X, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { useTranslations } from "next-intl"
 import { cn } from "@/lib/utils"
 import { useRouter } from '@/i18n/navigation'
-import { getUserProfile, updateUserProfile, type UserProfile } from "@/lib/api/auth"
+import { getUserProfile, updateUserProfile, type UserProfile, changePassword } from "@/lib/api/auth"
 import { useToast } from "@/components/ui/use-toast"
 import { useState, useEffect, useRef } from "react"
 import { ModeToggle } from "@/components/mode-toggle"
@@ -242,6 +242,8 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<typeof tabs[number]>("myProfile")
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [isPasswordSaving, setIsPasswordSaving] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState<string>("")
   const [avatarKey, setAvatarKey] = useState(0)
   const { users, isLoading: isLoadingUsers } = useUsers()
@@ -255,8 +257,6 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
-  const [password, setPassword] = useState("••••••••")
-  const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState<{
     id: number;
     first_name: string;
@@ -281,7 +281,7 @@ export default function ProfilePage() {
 
   const t = useTranslations()
   const n = useTranslations('navigation')
-  const p = useTranslations('profile')
+  const p = useTranslations('Profile')
   const router = useRouter()
 
   const { updateUser } = useUserStore()
@@ -292,6 +292,41 @@ export default function ProfilePage() {
   const [originalProfile, setOriginalProfile] = useState<UserProfile | null>(null)
 
   const [profileVersion, setProfileVersion] = useState(0)
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  })
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // Add password validation function
+  const validatePassword = (password: string): { isValid: boolean; error?: string } => {
+    if (password.length < 8) {
+      return { isValid: false, error: p('errors.passwordTooShort') }
+    }
+    
+    const hasUpperCase = /[A-Z]/.test(password)
+    const hasLowerCase = /[a-z]/.test(password)
+    const hasNumbers = /\d/.test(password)
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+    
+    if (!hasUpperCase || !hasLowerCase) {
+      return { isValid: false, error: p('errors.passwordNeedsCases') }
+    }
+    
+    if (!hasNumbers) {
+      return { isValid: false, error: p('errors.passwordNeedsNumber') }
+    }
+    
+    if (!hasSpecialChar) {
+      return { isValid: false, error: p('errors.passwordNeedsSpecial') }
+    }
+    
+    return { isValid: true }
+  }
 
   // Fetch profile data whenever profileVersion changes
   useEffect(() => {
@@ -338,9 +373,13 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Error fetching profile:', error)
       toast({
-        title: "Error",
-        description: "Failed to load profile",
-        variant: "destructive",
+        description: (
+          <div className="flex items-center gap-2 p-1">
+            <AlertCircle className="h-4 w-4 text-red-500" />
+            <p>{p('errors.profileFetchFailed')}</p>
+          </div>
+        ),
+        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
       })
     } finally {
       setIsLoading(false)
@@ -389,8 +428,13 @@ export default function ProfilePage() {
       // Only proceed if there are changes
       if (Object.keys(changedFields).length === 0) {
         toast({
-          title: "No Changes",
-          description: "No changes were made to your profile",
+          description: (
+            <div className="flex items-center gap-2 p-1">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <p>{p('errors.noChanges')}</p>
+            </div>
+          ),
+          className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
         })
         setIsSaving(false)
         return
@@ -444,8 +488,13 @@ export default function ProfilePage() {
       }
 
       toast({
-        title: "Success",
-        description: "Profile updated successfully",
+        description: (
+          <div className="flex items-center gap-2 p-1">
+            <CheckCircle2 className="h-4 w-4 text-teal-500" />
+            <p>{p('success.profileUpdated')}</p>
+          </div>
+        ),
+        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
       })
     } catch (error) {
       console.error('Error updating profile:', error)
@@ -453,9 +502,13 @@ export default function ProfilePage() {
       // Handle token expiration
       if (error instanceof Error && error.message.includes('token_not_valid')) {
         toast({
-          title: "Session Expired",
-          description: "Your session has expired. Please sign in again.",
-          variant: "destructive",
+          description: (
+            <div className="flex items-center gap-2 p-1">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <p>{p('errors.sessionExpired')}</p>
+            </div>
+          ),
+          className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
         })
         // Sign out and redirect to sign in
         await signOut({ redirect: true, callbackUrl: '/signin' })
@@ -468,10 +521,13 @@ export default function ProfilePage() {
            error.message.includes('server closed') ||
            error.message.includes('OperationalError'))) {
         toast({
-          title: "Connection Error",
-          description: "Unable to connect to the server. Please try again in a few moments.",
-          variant: "destructive",
-          duration: 5000,
+          description: (
+            <div className="flex items-center gap-2 p-1">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <p>{p('errors.connectionError')}</p>
+            </div>
+          ),
+          className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
         })
         return
       }
@@ -479,17 +535,25 @@ export default function ProfilePage() {
       // Handle specific API errors
       if (error instanceof Error && error.message.includes('email')) {
         toast({
-          title: "Error",
-          description: "This email is already in use by another account",
-          variant: "destructive",
+          description: (
+            <div className="flex items-center gap-2 p-1">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <p>{p('errors.emailInUse')}</p>
+            </div>
+          ),
+          className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
         })
         return
       }
 
       toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
+        description: (
+          <div className="flex items-center gap-2 p-1">
+            <AlertCircle className="h-4 w-4 text-red-500" />
+            <p>{p('errors.profileUpdateFailed')}</p>
+          </div>
+        ),
+        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
       })
     } finally {
       setIsSaving(false)
@@ -539,9 +603,64 @@ export default function ProfilePage() {
     }
   }, [])
 
+  useEffect(() => {
+    fetchUserProfile()
+  }, [])
+
   // Only render content after mounting to avoid hydration issues
   if (!mounted) {
     return null
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        {/* Avatar Loading Skeleton */}
+        <div className="flex justify-center">
+          <div className="relative">
+            <div className="h-20 w-20 rounded-full bg-gray-200 dark:bg-gray-800 animate-pulse" />
+            <div className="absolute -bottom-2 -right-2 h-6 w-6 rounded-full bg-gray-300 dark:bg-gray-700 animate-pulse" />
+          </div>
+        </div>
+
+        {/* Form Section Loading Skeleton */}
+        <div className="space-y-6">
+          {/* Personal Info Section */}
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm p-6">
+            <div className="mb-6">
+              <div className="h-6 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+            </div>
+            <div className="grid gap-6">
+              <div className="grid sm:grid-cols-2 gap-4">
+                {[1, 2].map((i) => (
+                  <div key={i}>
+                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded mb-2 animate-pulse" />
+                    <div className="h-10 bg-gray-100 dark:bg-gray-900 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <div className="h-4 w-24 bg-gray-200 dark:bg-gray-800 rounded mb-2 animate-pulse" />
+                  <div className="h-10 bg-gray-100 dark:bg-gray-900 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Password Section */}
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm p-6">
+            <div className="mb-6">
+              <div className="h-6 w-40 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+            </div>
+            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+          </div>
+
+          {/* Save Button */}
+          <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -650,31 +769,6 @@ export default function ProfilePage() {
                 onChange={(e) => handleInputChange('city', e.target.value)}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                {p('password')}
-              </label>
-              <div className="relative">
-                <Input 
-                  type={showPassword ? "text" : "password"}
-                  className="w-full bg-gray-50 border-gray-100 pr-10 dark:bg-gray-900/50 dark:border-gray-700" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -682,13 +776,209 @@ export default function ProfilePage() {
           <div className="mb-6">
             <h2 className="text-lg font-semibold">{p('passwordManager')}</h2>
           </div>
-          <div className="space-y-4">
-            <button
-              className="text-teal-500 text-sm hover:underline"
-            >
-              {p('changePassword')}
-            </button>
-          </div>
+          {isChangingPassword ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {p('currentPassword')}
+                </label>
+                <div className="relative">
+                  <Input 
+                    type={showCurrentPassword ? "text" : "password"}
+                    className="w-full bg-gray-50 border-gray-100 pr-10 dark:bg-gray-900/50 dark:border-gray-700" 
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData(prev => ({
+                      ...prev,
+                      currentPassword: e.target.value
+                    }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+                  >
+                    {showCurrentPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {p('newPassword')}
+                </label>
+                <div className="relative">
+                  <Input 
+                    type={showNewPassword ? "text" : "password"}
+                    className="w-full bg-gray-50 border-gray-100 pr-10 dark:bg-gray-900/50 dark:border-gray-700" 
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData(prev => ({
+                      ...prev,
+                      newPassword: e.target.value
+                    }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+                  >
+                    {showNewPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  {p('confirmPassword')}
+                </label>
+                <div className="relative">
+                  <Input 
+                    type={showConfirmPassword ? "text" : "password"}
+                    className="w-full bg-gray-50 border-gray-100 pr-10 dark:bg-gray-900/50 dark:border-gray-700" 
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData(prev => ({
+                      ...prev,
+                      confirmPassword: e.target.value
+                    }))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsChangingPassword(false)
+                    setPasswordData({
+                      currentPassword: '',
+                      newPassword: '',
+                      confirmPassword: ''
+                    })
+                  }}
+                >
+                  {p('cancel')}
+                </Button>
+                <Button
+                  className="bg-teal-600 hover:bg-teal-500 text-white"
+                  onClick={async () => {
+                    if (passwordData.newPassword !== passwordData.confirmPassword) {
+                      toast({
+                        description: (
+                          <div className="flex items-center gap-2 p-1">
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                            <p>{p('errors.passwordsDoNotMatch')}</p>
+                          </div>
+                        ),
+                        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+                      })
+                      return
+                    }
+
+                    // Check password strength
+                    const passwordCheck = validatePassword(passwordData.newPassword)
+                    if (!passwordCheck.isValid) {
+                      toast({
+                        description: (
+                          <div className="flex items-center gap-2 p-1">
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                            <p>{passwordCheck.error}</p>
+                          </div>
+                        ),
+                        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+                      })
+                      return
+                    }
+                    
+                    try {
+                      setIsPasswordSaving(true)
+                      await changePassword(passwordData.currentPassword, passwordData.newPassword)
+                      toast({
+                        description: (
+                          <div className="flex items-center gap-2 p-1">
+                            <CheckCircle2 className="h-4 w-4 text-teal-500" />
+                            <p>{p('success.passwordChanged')}</p>
+                          </div>
+                        ),
+                        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+                      })
+                      setIsChangingPassword(false)
+                      setPasswordData({
+                        currentPassword: '',
+                        newPassword: '',
+                        confirmPassword: ''
+                      })
+                    } catch (error) {
+                      console.error('Error changing password:', error)
+                      let errorMessage = p('errors.passwordChangeFailed')
+                      
+                      if (error instanceof Error) {
+                        const errorText = error.message
+                        if (errorText === 'Current password is incorrect') {
+                          errorMessage = p('errors.currentPasswordIncorrect')
+                        } else if (errorText.includes('endpoint not found')) {
+                          errorMessage = p('errors.serverError')
+                        }
+                      }
+                      
+                      toast({
+                        description: (
+                          <div className="flex items-center gap-2 p-1">
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                            <p>{errorMessage}</p>
+                          </div>
+                        ),
+                        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+                      })
+                      
+                      // Clear the current password field on incorrect password
+                      if (error instanceof Error && error.message === 'Current password is incorrect') {
+                        setPasswordData(prev => ({
+                          ...prev,
+                          currentPassword: ''
+                        }))
+                      }
+                    } finally {
+                      setIsPasswordSaving(false)
+                    }
+                  }}
+                  disabled={isPasswordSaving}
+                >
+                  {isPasswordSaving ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>{p('saving')}</span>
+                    </div>
+                  ) : (
+                    p('savePassword')
+                  )}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <button
+                className="text-teal-500 text-sm hover:underline"
+                onClick={() => setIsChangingPassword(true)}
+              >
+                {p('changePassword')}
+              </button>
+            </div>
+          )}
         </div>
 
         <Button 

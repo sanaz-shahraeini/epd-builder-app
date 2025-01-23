@@ -2,8 +2,7 @@
 
 import { Sidebar } from "@/components/sidebar"
 import { AdminSidebar } from "@/app/components/dashboard/AdminSidebar"
-import { LanguageSwitcher } from '@/components/language-switcher';
-import { ModeToggle } from '@/components/mode-toggle';
+
 import { useEffect, useState } from "react"
 import { useUserStore } from "@/lib/store/user"
 import { getUserProfile } from "@/lib/api/auth"
@@ -25,20 +24,6 @@ export default function DashboardLayout({
   const [isAdminSidebarOpen, setIsAdminSidebarOpen] = useState(false)
   const locale = useLocale()
   console.log('Current locale:', locale)
-  
-  // Debug messages
-  const allMessages = useTranslations()
-  console.log('All available messages:', Object.keys(allMessages))
-  
-  const p = useTranslations('profile')
-  console.log('Translations object:', p)
-  console.log('Translations for profile:', JSON.stringify(p, null, 2))
-  console.log('Attempting to access title:', p('title') || 'Profile (Fallback)')
-  
-  // Additional debug info
-  console.log('Typeof useTranslations result:', typeof p)
-  console.log('Is function:', typeof p === 'function')
-  console.log('Function keys:', p ? Object.keys(p) : 'N/A')
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -80,7 +65,7 @@ export default function DashboardLayout({
             onAdminPanelClick={() => setIsAdminSidebarOpen(!isAdminSidebarOpen)}
           />
 
-          <main className="p-4 md:p-6 w-full max-w-full overflow-x-hidden">
+          <main className="p-4 md:p-6 w-full max-w-full overflow-x-hidden ">
             <div className="flex flex-col lg:flex-row gap-6 w-full">
               <div className="flex-1 w-full overflow-x-hidden">
                 {children}
@@ -88,7 +73,7 @@ export default function DashboardLayout({
 
               {/* Right side - Admin Sidebar */}
               <div className={cn(
-                "w-full lg:w-80 bg-white dark:bg-gray-900 lg:static lg:block",
+                "w-full lg:w-80 bg-white dark:bg-black lg:static lg:block",
                 "fixed inset-y-0 right-0 z-50 transform transition-transform duration-200 ease-in-out",
                 isAdminSidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
               )}>

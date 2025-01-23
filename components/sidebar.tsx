@@ -17,28 +17,9 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   return (
-    <>
-      {/* Mobile Menu */}
-      <div className={`fixed top-4 right-4 flex items-center gap-2 md:hidden ${className}`}>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu className="h-6 w-6" />
-              <span className="sr-only">Toggle Menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0 bg-white dark:bg-black border-r dark:border-gray-800">
-            <SidebarContent isMobile={true} />
-          </SheetContent>
-        </Sheet>
-        <ModeToggle />
-      </div>
-
-      {/* Desktop Sidebar */}
-      <div className={`hidden md:block w-64 h-screen bg-white dark:bg-black border-r dark:border-gray-800 fixed ${className}`}>
-        <SidebarContent isMobile={false} />
-      </div>
-    </>
+    <div className={`w-64 h-screen bg-white dark:bg-black border-r dark:border-gray-800 ${className}`}>
+      <SidebarContent isMobile={false} />
+    </div>
   )
 }
 
@@ -148,28 +129,28 @@ function SidebarContent({ isMobile }: { isMobile?: boolean }) {
       <nav className="flex-1 p-4">
         <div className="space-y-2">
           <Link 
-            href="/dashboard/product-portfolio" 
-            className={getLinkClassName('/dashboard/product-portfolio')}
+            href="/en/product-portfolio" 
+            className={getLinkClassName('/product-portfolio')}
           >
             <BarChart2 className="h-5 w-5" />
             <span>{n('productPortfolio')}</span>
           </Link>
           <Link 
-            href="/dashboard/project-management" 
+            href="/en/dashboard/project-management" 
             className={getLinkClassName('/dashboard/project-management')}
           >
             <FileText className="h-5 w-5" />
             <span>{n('projectManagement')}</span>
           </Link>
           <Link 
-            href="/dashboard/profile" 
+            href="/en/dashboard/profile" 
             className={getLinkClassName('/dashboard/profile')}
           >
             <Settings className="h-5 w-5" />
             <span>{n('administrative')}</span>
           </Link>
           <Link 
-            href="/dashboard/epd-preview" 
+            href="/en/dashboard/epd-preview" 
             className={getLinkClassName('/dashboard/epd-preview')}
           >
             <Search className="h-5 w-5" />

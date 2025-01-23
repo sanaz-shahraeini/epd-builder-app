@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { BarChart2, FileText, Settings, Search, MessageSquare, LogOut, Menu } from 'lucide-react'
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
 
@@ -14,6 +14,7 @@ export function MobileNav() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0">
+          <SheetTitle className="sr-only">Mobile Navigation Menu</SheetTitle>
           <div className="p-6 flex justify-between items-center">
             <img src="/assets/images/logo.png" alt="TerraNEXT" className="h-8" />
           </div>
@@ -56,7 +57,7 @@ export function MobileNav() {
                 className="flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
               >
                 <Search className="h-5 w-5" />
-                <span>EPD preview</span>
+                <span>EPD Preview</span>
               </Link>
               <Link 
                 href="#" 
@@ -64,18 +65,17 @@ export function MobileNav() {
               >
                 <MessageSquare className="h-5 w-5" />
                 <span>Requests</span>
-                <span className="ml-auto bg-teal-100 text-teal-600 text-xs px-2 py-0.5 rounded-full">2</span>
+                <span className="ml-auto bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400 text-xs px-2 py-0.5 rounded-full">2</span>
               </Link>
             </div>
 
             <div className="absolute bottom-4 left-4 right-4">
-              <Link 
-                href="#" 
-                className="flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+              <button 
+                className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
               >
                 <LogOut className="h-5 w-5" />
-                <span>Log out</span>
-              </Link>
+                <span>Logout</span>
+              </button>
             </div>
           </nav>
         </SheetContent>

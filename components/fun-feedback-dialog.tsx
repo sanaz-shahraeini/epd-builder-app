@@ -1,6 +1,6 @@
 'use client'
 
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Sparkles, MessageCircle, Heart } from 'lucide-react'
 import Confetti from 'react-confetti'
@@ -50,6 +50,7 @@ export function FunFeedbackDialog({ open, onOpenChange, onAction }: FunFeedbackD
           />
         )}
         <div className="flex flex-col items-center text-center p-4">
+          <DialogTitle className="sr-only">Share Your Creative Ideas</DialogTitle>
           <div className="h-16 w-16 bg-teal-50 rounded-full flex items-center justify-center mb-4">
             <Sparkles className="h-8 w-8 text-teal-600 animate-pulse" />
           </div>

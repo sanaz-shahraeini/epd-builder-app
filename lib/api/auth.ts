@@ -186,9 +186,34 @@ export async function getSession() {
 
 import { getSession as getNextAuthSession } from 'next-auth/react'
 
+// Refresh token function
+async function refreshAccessToken(refreshToken: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users/token/refresh/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        refresh: refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to refresh token');
+    }
+
+    const data = await response.json();
+    return data.access;
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    throw error;
+  }
+}
+
 // Get user profile
 export async function getUserProfile(): Promise<UserProfile> {
-  const session = await getNextAuthSession()
+  let session = await getNextAuthSession()
   console.log('Session in getUserProfile:', session)
   
   if (!session?.accessToken) {
@@ -199,24 +224,39 @@ export async function getUserProfile(): Promise<UserProfile> {
   console.log('Fetching from URL:', url)
   
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${session.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    })
-
-    if (!response.ok) {
-      console.error('Profile fetch failed:', response.status, response.statusText)
-      if (response.status === 401) {
-        throw new Error('Session expired')
+    const makeRequest = async (token: string) => {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      if (response.status === 401 && session?.refreshToken) {
+        // Token expired, try to refresh
+        const newAccessToken = await refreshAccessToken(session.refreshToken);
+        // Update session token
+        session = {
+          ...session,
+          accessToken: newAccessToken
+        };
+        // Retry with new token
+        return makeRequest(newAccessToken);
       }
-      throw new Error('Failed to fetch profile')
-    }
 
-    const data = await response.json()
+      if (!response.ok) {
+        console.error('Profile fetch failed:', response.status, response.statusText)
+        throw new Error('Failed to fetch profile')
+      }
+
+      return response;
+    };
+
+    const response = await makeRequest(session.accessToken);
+    const data = await response.json();
+    
     console.log('Raw profile data:', data)
     console.log('Profile data profile:', data.profile)
     console.log('Profile picture URL:', data.profile?.profile_picture_url)
@@ -269,9 +309,14 @@ export async function getCompanyUsers(): Promise<UserProfile[]> {
       console.error('Failed to fetch company users:', {
         status: response.status,
         statusText: response.statusText,
-        errorText
+        errorText,
+        url,
+        headers: {
+          ...response.headers,
+          Authorization: 'Bearer [REDACTED]' // Don't log the actual token
+        }
       })
-      throw new Error(`Failed to fetch company users: ${response.status} ${response.statusText}`)
+      throw new Error(`Failed to fetch company users: ${response.status} ${response.statusText} - ${errorText}`)
     }
 
     const data = await response.json()
@@ -360,6 +405,64 @@ export async function updateUserProfile(data: Partial<UserProfile>) {
     return updatedProfile
   } catch (error) {
     console.error('Error updating profile:', error)
+    throw error
+  }
+}
+
+// Change password
+export async function changePassword(currentPassword: string, newPassword: string) {
+  const session = await getNextAuthSession()
+  console.log('Session in changePassword:', session)
+  
+  if (!session?.accessToken) {
+    throw new Error('Not authenticated')
+  }
+
+  const url = `${API_BASE_URL}/users/change-password/`
+  console.log('Changing password at URL:', url)
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    })
+
+    console.log('Password change response status:', response.status)
+    const responseText = await response.text()
+    console.log('Password change response text:', responseText)
+
+    let errorData = {}
+    try {
+      errorData = JSON.parse(responseText)
+    } catch (e) {
+      console.log('Response is not JSON:', e)
+    }
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Current password is incorrect')
+      }
+      if (response.status === 404) {
+        throw new Error('Password change endpoint not found. Please check the API endpoint configuration.')
+      }
+      throw new Error(
+        errorData.detail || 
+        errorData.message || 
+        errorData.error || 
+        `Failed to change password (Status: ${response.status})`
+      )
+    }
+
+    return errorData
+  } catch (error) {
+    console.error('Error changing password:', error)
     throw error
   }
 }

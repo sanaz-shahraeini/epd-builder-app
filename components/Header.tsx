@@ -5,7 +5,7 @@ import { useRouter } from '@/i18n/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Menu, Users } from "lucide-react"
@@ -57,6 +57,7 @@ const Header = ({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
+              <SheetTitle className="sr-only">Sidebar Menu</SheetTitle>
               <Sidebar />
             </SheetContent>
           </Sheet>

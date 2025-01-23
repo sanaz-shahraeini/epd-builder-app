@@ -42,7 +42,7 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
   }
 
   return (
-    <div className="w-full lg:w-[300px] border-l">
+    <div className="w-full lg:w-[300px] border-l dark:bg-black">
       <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
         <div className="flex flex-col items-center text-center space-y-3 lg:flex-row lg:text-left lg:space-y-0 lg:space-x-3">
           <Avatar className="h-10 w-10 lg:h-8 lg:w-8">
@@ -103,25 +103,27 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
                       </AvatarFallback>
                     )}
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs lg:text-sm font-medium leading-none">
-                      {user.username}
-                    </p>
-                    <p className="text-xs lg:text-sm text-muted-foreground truncate">
-                      {user.email}
-                    </p>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {isNewUser(user) && (
-                      <span className="text-[10px] lg:text-xs text-teal-500 font-medium px-1.5 py-0.5 lg:px-2 lg:py-1 bg-teal-50 dark:bg-teal-950 rounded-full">
-                        New
-                      </span>
-                    )}
-                    {user.user_type === 'admin' && (
-                      <span className="text-[10px] lg:text-xs text-blue-500 font-medium px-1.5 py-0.5 lg:px-2 lg:py-1 bg-blue-50 dark:bg-blue-950 rounded-full">
-                        Admin
-                      </span>
-                    )}
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm lg:text-base font-medium truncate">
+                        {user.username}
+                      </p>
+                      {isNewUser(user) && (
+                        <span className="text-[10px] lg:text-xs text-teal-500 font-medium px-1.5 py-0.5 lg:px-2 lg:py-1 bg-teal-50 dark:bg-teal-950 rounded-full">
+                          New
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs lg:text-sm text-muted-foreground truncate">
+                        {user.email}
+                      </p>
+                      {user.user_type === 'admin' && (
+                        <span className="text-[10px] lg:text-xs text-blue-500 font-medium px-1.5 py-0.5 lg:px-2 lg:py-1 bg-blue-50 dark:bg-blue-950 rounded-full">
+                          Admin
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))

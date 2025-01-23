@@ -41,7 +41,7 @@ export default function InboxPage() {
 
   const t = useTranslations()
   const n = useTranslations('navigation')
-  const p = useTranslations('profile')
+  const p = useTranslations('Profile')
   const router = useRouter()
 
   useEffect(() => {
