@@ -23,7 +23,7 @@
     "signInWithGoogle": "Continue with Google",
     "submit": "Sign In",
     "noAccount": "Don't have an account?",
-    "signUp": "Sign Up",
+    "createAccount": "Create Account",
     "email": "Email",
     "username": "Username",
     "password": "Password",
@@ -37,9 +37,13 @@
     "verifyTitle": "Enter Verification Code",
     "verifyDescription": "Please enter the 6-digit code sent to your email",
     "sendCode": "Send Code",
-    "verifyCode": "Verify Code",
+    "verify": "Verify Code",
+    "verifying": "Verifying...",
+    "sendingCode": "Sending code...",
     "resendCode": "Resend code",
-    "resendCodeIn": "Resend code in {seconds} seconds",
+    "codeExpiresIn": "Code expires in",
+    "codeExpired": "Code expired",
+    "checkEmail": "Please check your email for the verification code",
     "success": {
       "signedIn": "Successfully signed in",
       "codeSentAgain": "New verification code has been sent",
@@ -56,6 +60,9 @@
         "required": "Email is required",
         "invalid": "Please enter a valid email address"
       },
+      "verificationCode": {
+        "required": "Verification code is required"
+      },
       "credentials": {
         "required": "Please provide both username and password"
       }
@@ -70,7 +77,8 @@
       "accessDenied": "Access Denied",
       "regularUserNotAllowed": "Regular user accounts are not allowed at this time. Please contact support for assistance.",
       "emailNotFound": "Email address not found",
-      "invalidCode": "Invalid verification code"
+      "invalidCode": "Invalid verification code",
+      "serverError": "A server error occurred. Please try again."
     },
     "processing": "Processing...",
     "signUp": "Sign Up",

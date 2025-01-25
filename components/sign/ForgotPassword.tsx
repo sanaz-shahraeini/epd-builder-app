@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { IoMailOutline } from "react-icons/io5";
 import { RiLockPasswordLine } from "react-icons/ri";
+import { API_ROUTES } from "@/lib/api/config";
 
 interface ForgotPasswordProps {
   open: boolean;
@@ -71,7 +72,7 @@ function ForgotPassword({ open, onClose, setShowSignIn }: ForgotPasswordProps) {
 
         if (step === "email") {
           // Send verification code to email
-          const response = await fetch("/api/auth/forgot-password", {
+          const response = await fetch(API_ROUTES.AUTH.FORGOT_PASSWORD, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: values.email }),
@@ -87,7 +88,7 @@ function ForgotPassword({ open, onClose, setShowSignIn }: ForgotPasswordProps) {
           }
         } else if (step === "verify") {
           // Verify code
-          const response = await fetch("/api/auth/verify-code", {
+          const response = await fetch(API_ROUTES.AUTH.VERIFY_CODE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -105,7 +106,7 @@ function ForgotPassword({ open, onClose, setShowSignIn }: ForgotPasswordProps) {
           }
         } else {
           // Reset password
-          const response = await fetch("/api/auth/reset-password", {
+          const response = await fetch(API_ROUTES.AUTH.RESET_PASSWORD, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -144,7 +145,7 @@ function ForgotPassword({ open, onClose, setShowSignIn }: ForgotPasswordProps) {
     try {
       setLoading(true);
       setMessage(null);
-      const response = await fetch("/api/auth/resend-code", {
+      const response = await fetch(API_ROUTES.AUTH.RESEND_CODE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formik.values.email }),

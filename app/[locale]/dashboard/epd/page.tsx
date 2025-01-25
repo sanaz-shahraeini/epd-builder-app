@@ -25,6 +25,7 @@ import { Search, Image, Info } from 'lucide-react'
 import { AdminSidebar } from "@/app/components/dashboard/AdminSidebar"
 import { useDebounce } from "@/lib/hooks/useDebounce"
 import { ProductComparison as ProductComparisonComponent } from "@/app/components/comparison/ProductComparison"
+import { API_ROUTES, buildApiUrl } from "@/lib/api/config";
 
 interface Product {
   id: string;
@@ -146,7 +147,7 @@ export default function EPDPage() {
       // Don't add status filter since all are verified in current API
       
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/ibudata-full/?${queryParams.toString()}`
+        buildApiUrl(`${API_ROUTES.PRODUCTS.IBU_DATA}/?${queryParams.toString()}`)
       );
       const data = await response.json();
       
@@ -179,7 +180,7 @@ export default function EPDPage() {
     try {
       // Fetch all data without pagination for getting unique values
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/ibudata-full/?page_size=1000`
+        buildApiUrl(`${API_ROUTES.PRODUCTS.IBU_DATA}/?page_size=1000`)
       );
       const data = await response.json();
       
@@ -373,7 +374,7 @@ export default function EPDPage() {
                 />
               </div>
               <Button 
-                className="bg-teal-500 hover:bg-teal-600 text-white px-6"
+               className="px-6 bg-teal-600 hover:bg-teal-700 text-white text-sm lg:text-base"
                 onClick={handleCompareClick}
                 disabled={selectedForComparison.length < 2}
               >

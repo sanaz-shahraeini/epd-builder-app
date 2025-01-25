@@ -28,7 +28,8 @@ export default function SignInPage() {
     <SignInForm 
       open={isOpen} 
       onClose={handleClose} 
-      setShowSignUp={handleShowSignUp} 
+      setShowSignUp={handleShowSignUp}
+      callbackUrl={callbackUrl}
     />
   );
 }

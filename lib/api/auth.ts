@@ -213,71 +213,38 @@ async function refreshAccessToken(refreshToken: string) {
 
 // Get user profile
 export async function getUserProfile(): Promise<UserProfile> {
-  let session = await getNextAuthSession()
-  console.log('Session in getUserProfile:', session)
-  
-  if (!session?.accessToken) {
-    throw new Error('Not authenticated')
-  }
-
-  const url = `${process.env.NEXT_PUBLIC_API_URL}/users/profile/`
-  console.log('Fetching from URL:', url)
-  
   try {
-    const makeRequest = async (token: string) => {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-      
-      if (response.status === 401 && session?.refreshToken) {
-        // Token expired, try to refresh
-        const newAccessToken = await refreshAccessToken(session.refreshToken);
-        // Update session token
-        session = {
-          ...session,
-          accessToken: newAccessToken
-        };
-        // Retry with new token
-        return makeRequest(newAccessToken);
-      }
-
-      if (!response.ok) {
-        console.error('Profile fetch failed:', response.status, response.statusText)
-        throw new Error('Failed to fetch profile')
-      }
-
-      return response;
-    };
-
-    const response = await makeRequest(session.accessToken);
-    const data = await response.json();
+    const session = await getNextAuthSession();
     
-    console.log('Raw profile data:', data)
-    console.log('Profile data profile:', data.profile)
-    console.log('Profile picture URL:', data.profile?.profile_picture_url)
-    console.log('Profile picture:', data.profile?.profile_picture)
-
-    return {
-      id: data.id,
-      username: data.username,
-      email: data.email,
-      first_name: data.first_name || "",
-      last_name: data.last_name || "",
-      user_type: data.user_type || "regular",
-      company_name: data.company_name || "",
-      city: data.city || "",
-      country: data.country || "",
-      profile_picture_url: data.profile?.profile_picture_url || data.profile?.profile_picture || "",
-      profile: data.profile
+    if (!session?.accessToken) {
+      throw new Error('No active session');
     }
+
+    const response = await fetch(`${API_BASE_URL}/users/profile/`, {
+      headers: {
+        'Authorization': `Bearer ${session.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Session might be expired, throw specific error
+        throw new Error('Session_Expired');
+      }
+      throw new Error(`Failed to fetch profile: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('Error fetching profile:', error)
-    throw error
+    console.error('Error in getUserProfile:', error);
+    if (error instanceof Error && error.message === 'Session_Expired') {
+      // Handle expired session
+      window.location.href = '/signin';
+    }
+    throw error;
   }
 }
 

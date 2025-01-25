@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { X, Plus, Download, Image } from 'lucide-react'
 import { IbuData } from '@/types/ibu'
+import { API_ROUTES, buildApiUrl } from "@/lib/api/config";
 
 interface ProductComparisonProps {
   selectedProducts: IbuData[]
@@ -26,7 +27,7 @@ export function ProductComparison({
       const uuids = selectedProducts.map(p => p.uuid).join(',');
       
       // Create download URL with filters
-      const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/ibudata-full/download_excel/?uuids=${uuids}`;
+      const downloadUrl = buildApiUrl(`${API_ROUTES.PRODUCTS.IBU_DATA}/download_excel/?uuids=${uuids}`);
       
       // Trigger download
       window.open(downloadUrl, '_blank');
