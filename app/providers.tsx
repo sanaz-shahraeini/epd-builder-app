@@ -3,7 +3,7 @@
 import { ReactNode } from 'react'
 import { ErrorBoundary } from '@/lib/error-boundary'
 import { SessionProvider } from 'next-auth/react'
-import { SessionMonitor } from '@/components/session-monitor'
+import { SessionMonitor } from '@/components/session/SessionMonitor'
 import { NextIntlClientProvider } from 'next-intl'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Theme } from '@radix-ui/themes'
@@ -31,6 +31,7 @@ export function Providers({
   return (
     <ErrorBoundary>
       <SessionProvider session={session}>
+        <SessionMonitor />
         <SessionMonitor />
         <NextIntlClientProvider 
           messages={messages} 

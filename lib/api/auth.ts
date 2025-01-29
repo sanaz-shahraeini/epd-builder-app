@@ -187,7 +187,7 @@ export async function getSession() {
 import { getSession as getNextAuthSession } from 'next-auth/react'
 
 // Refresh token function
-async function refreshAccessToken(refreshToken: string) {
+export async function refreshAccessToken(refreshToken: string) {
   try {
     const response = await fetch(`${API_BASE_URL}/users/token/refresh/`, {
       method: 'POST',

@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Menu, Users, X } from "lucide-react"
 import { useTranslations, useLocale } from "next-intl"
+import { signOut } from "next-auth/react"
+import Image from 'next/image'
 
 export default function DashboardLayout({
   children,
@@ -53,7 +55,7 @@ export default function DashboardLayout({
             isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
-          <Sidebar className="h-full" />
+          <Sidebar className="h-full" onMobileClose={() => setIsMobileMenuOpen(false)} />
         </div>
 
         {/* Main Content */}

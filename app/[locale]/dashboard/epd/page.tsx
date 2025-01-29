@@ -374,7 +374,7 @@ export default function EPDPage() {
                 />
               </div>
               <Button 
-               className="px-6 bg-teal-600 hover:bg-teal-700 text-white text-sm lg:text-base"
+               className="px-6 w-full bg-teal-600 hover:bg-teal-700 text-white text-sm lg:text-base"
                 onClick={handleCompareClick}
                 disabled={selectedForComparison.length < 2}
               >

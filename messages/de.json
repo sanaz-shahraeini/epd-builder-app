@@ -280,6 +280,13 @@
       }
     },
     "navigation": {
+      "sidebarMenu": "Seitenmenü",
+      "companyUser": "Firmenbenutzer",
+      "tabs": {
+        "epdOverview": "EPD Übersicht",
+        "inbox": "Posteingang",
+        "myProfile": "Mein Profil"
+      },
       "dashboard": {
         "portfolio": "Produktportfolio",
         "projects": "Projektverwaltung",
@@ -442,5 +449,39 @@
       },
       "loading": "EPD-Daten werden geladen...",
       "noResults": "Keine Ergebnisse gefunden"
+    },
+    "productList": {
+      "searchPlaceholder": "Hier suchen",
+      "viewMode": {
+        "list": "Liste",
+        "grid": "Raster"
+      },
+      "filter": {
+        "allProducts": "Alle Produkte",
+        "myProducts": "Meine Produkte"
+      },
+      "actions": {
+        "newProduct": "+ Neues Produkt",
+        "retry": "Wiederholen"
+      },
+      "columns": {
+        "name": "Name",
+        "description": "Beschreibung",
+        "industrySolution": "Industrielösung",
+        "category": "Kategorie",
+        "verificationYear": "EPD-Verifizierungsjahr",
+        "country": "Land"
+      },
+      "status": {
+        "loading": "Produkte werden geladen...",
+        "noProducts": "Keine Produkte gefunden",
+        "noSearchResults": "Keine Produkte für diese Suche gefunden"
+      },
+      "pagination": {
+        "show": "Anzeigen",
+        "total": "Gesamt: {count} Produkte",
+        "previous": "Zurück",
+        "next": "Weiter"
+      }
     }
 }

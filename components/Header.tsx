@@ -14,9 +14,9 @@ import { ModeToggle } from './mode-toggle';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 
 const tabs = [
-  { label: 'EPD Overview', href: '/dashboard/epd' },
-  { label: 'Inbox', href: '/dashboard/inbox' },
-  { label: 'My Profile', href: '/dashboard/profile' },
+  { label: 'tabs.epdOverview', href: '/dashboard/epd' },
+  { label: 'tabs.inbox', href: '/dashboard/inbox' },
+  { label: 'tabs.myProfile', href: '/dashboard/profile' },
 ] as const;
 
 const Header = ({ 
@@ -31,6 +31,8 @@ const Header = ({
   const n = useTranslations('navigation');
   const router = useRouter();
   const pathname = usePathname();
+  
+  const isProductPortfolio = pathname?.includes('product-portfolio');
 
   const getInitials = () => {
     if (!user) return 'UN'
@@ -57,46 +59,50 @@ const Header = ({
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 p-0">
-              <SheetTitle className="sr-only">Sidebar Menu</SheetTitle>
+              <SheetTitle className="sr-only">{n('sidebarMenu')}</SheetTitle>
               <Sidebar />
             </SheetContent>
           </Sheet>
 
           {/* User Avatar */}
-          {user?.profile_picture_url && user.profile_picture_url.trim() !== '' ? (
-            <Avatar>
-              <AvatarImage 
-                src={user.profile_picture_url} 
-                alt={`${user?.first_name || ''} ${user?.last_name || ''}`} 
-                className="object-cover"
-              />
-              <AvatarFallback>{getInitials()}</AvatarFallback>
-            </Avatar>
-          ) : (
-            <Avatar>
-              <AvatarFallback>{getInitials()}</AvatarFallback>
-            </Avatar>
-          )}
-          
-          {/* User Details */}
-          <div className="flex flex-col">
-            <div className="text-sm font-medium">
-              {user?.first_name} {user?.last_name}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {user?.user_type === 'company' ? 'Company User' : user?.user_type}
-            </div>
-          </div>
+          {!isProductPortfolio && (
+            <>
+              {user?.profile_picture_url && user.profile_picture_url.trim() !== '' ? (
+                <Avatar>
+                  <AvatarImage 
+                    src={user.profile_picture_url} 
+                    alt={`${user?.first_name || ''} ${user?.last_name || ''}`} 
+                    className="object-cover"
+                  />
+                  <AvatarFallback>{getInitials()}</AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar>
+                  <AvatarFallback>{getInitials()}</AvatarFallback>
+                </Avatar>
+              )}
+              
+              {/* User Details */}
+              <div className="flex flex-col">
+                <div className="text-sm font-medium">
+                  {user?.first_name} {user?.last_name}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {user?.user_type === 'company' ? n('companyUser') : user?.user_type}
+                </div>
+              </div>
 
-          {/* Admin Panel Toggle (Mobile) */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden ml-2"
-            onClick={onAdminPanelClick}
-          >
-            <Users className="h-5 w-5" />
-          </Button>
+              {/* Admin Panel Toggle (Mobile) */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden ml-2"
+                onClick={onAdminPanelClick}
+              >
+                <Users className="h-5 w-5" />
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Right side - Controls */}
@@ -107,30 +113,32 @@ const Header = ({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="border-b border-gray-200 dark:border-gray-800">
-        <nav className="flex justify-start px-4 ml-auto w-[700px] overflow-x-auto space-x-4">
-          {tabs.map((tab) => {
-            const isActive = pathname?.includes(tab.href.split('/').pop()!);
-            
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={`
-                  relative px-3 py-3 text-sm font-medium tracking-wide transition-all duration-300 ease-in-out
-                  ${
-                    isActive
-                      ? 'text-[#00A499] font-semibold after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-full after:h-[3px] after:bg-[#00A499] after:rounded-t-sm'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-[3px] after:bg-[#00A499] after:transition-all after:duration-300 hover:after:w-full'
-                  }
-                `}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+      {!isProductPortfolio && (
+        <div className="border-b border-gray-200 dark:border-gray-800">
+          <nav className="flex justify-start px-4 ml-auto w-[700px] overflow-x-auto space-x-4">
+            {tabs.map((tab) => {
+              const isActive = pathname?.includes(tab.href.split('/').pop()!);
+              
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  className={`
+                    relative px-3 py-3 text-sm font-medium tracking-wide transition-all duration-300 ease-in-out
+                    ${
+                      isActive
+                        ? 'text-[#00A499] font-semibold after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-full after:h-[3px] after:bg-[#00A499] after:rounded-t-sm'
+                        : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-0 after:h-[3px] after:bg-[#00A499] after:transition-all after:duration-300 hover:after:w-full'
+                    }
+                  `}
+                >
+                  {n(tab.label)}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
     </div>
   );
 };

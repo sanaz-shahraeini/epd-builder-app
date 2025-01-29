@@ -80,10 +80,9 @@ export function Sidebar() {
         <Image
           src="./assets/images/logo.png"
           alt="TerraNEXT"
-          width={150}
-          height={40}
+          fill
           priority
-          className="w-full max-w-[150px] h-auto mx-auto"
+          style={{ objectFit: 'contain' }}
         />
       </div>
 
@@ -176,7 +175,7 @@ export function Sidebar() {
 
       <div className="px-3 mt-auto">
         <Link
-          href="/auth/signout"
+          href="api/auth/signout"
           className="flex items-center gap-3 px-3 py-2 text-sm text-gray-700 rounded-md hover:bg-gray-100 w-full"
         >
           <LogOut className="h-5 w-5" />

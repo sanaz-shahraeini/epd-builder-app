@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
 
 export const API_ROUTES = {
   AUTH: {
@@ -8,7 +8,7 @@ export const API_ROUTES = {
     RESEND_CODE: '/api/auth/resend-code',
   },
   PRODUCTS: {
-    LIST: '/api/products',
+    LIST: '/api/products/',
     IBU_DATA: '/api/ibudata-full',
   },
 } as const;

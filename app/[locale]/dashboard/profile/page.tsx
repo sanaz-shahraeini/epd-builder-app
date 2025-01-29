@@ -248,11 +248,6 @@ export default function ProfilePage() {
   const [avatarKey, setAvatarKey] = useState(0)
   const { users, isLoading: isLoadingUsers } = useUsers()
   const [searchQuery, setSearchQuery] = useState("")
-  const filteredUsers = users.filter(user =>
-    user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.job_title?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -279,20 +274,7 @@ export default function ProfilePage() {
     profile_picture: undefined
   })
 
-  const t = useTranslations()
-  const n = useTranslations('navigation')
-  const p = useTranslations('Profile')
-  const router = useRouter()
-
-  const { updateUser } = useUserStore()
-
-  const { data: session } = useSession()
-  const user = useUserStore((state) => state.user)
-
   const [originalProfile, setOriginalProfile] = useState<UserProfile | null>(null)
-
-  const [profileVersion, setProfileVersion] = useState(0)
-
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -301,6 +283,119 @@ export default function ProfilePage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  const t = useTranslations()
+  const n = useTranslations('navigation')
+  const p = useTranslations('Profile')
+  const router = useRouter()
+  const { updateUser } = useUserStore()
+  const { data: session } = useSession()
+  const user = useUserStore((state) => state.user)
+
+  // Initialize component
+  useEffect(() => {
+    let isSubscribed = true
+
+    const initializeComponent = async () => {
+      try {
+        setIsLoading(true)
+        const profile = await getUserProfile()
+        
+        if (!isSubscribed) return
+        
+        if (profile) {
+          const profileData = {
+            id: profile.id,
+            first_name: profile.first_name || "",
+            last_name: profile.last_name || "",
+            email: profile.email || "",
+            country: profile.country || "",
+            city: profile.profile?.city || "",
+            company_name: profile.company_name || "",
+            user_type: profile.user_type || "regular",
+            profile_picture: undefined
+          }
+
+          setFormData(profileData)
+          setOriginalProfile(profile)
+
+          if (profile.profile?.profile_picture_url) {
+            const timestamp = new Date().getTime()
+            const newAvatarUrl = `${profile.profile.profile_picture_url}?t=${timestamp}`
+            setAvatarUrl(newAvatarUrl)
+            setAvatarKey(prev => prev + 1)
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing component:', error)
+        toast({
+          description: (
+            <div className="flex items-center gap-2 p-1">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <p>{p('errors.profileFetchFailed')}</p>
+            </div>
+          ),
+          className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+        })
+      } finally {
+        if (isSubscribed) {
+          setIsLoading(false)
+          setMounted(true)
+        }
+      }
+    }
+
+    if (!mounted) {
+      initializeComponent()
+    }
+
+    return () => {
+      isSubscribed = false
+    }
+  }, [mounted, toast, p])
+
+  const fetchUserProfile = async () => {
+    try {
+      setIsLoading(true)
+      const profile = await getUserProfile()
+      
+      if (!profile) return
+
+      const profileData = {
+        id: profile.id,
+        first_name: profile.first_name || "",
+        last_name: profile.last_name || "",
+        email: profile.email || "",
+        country: profile.country || "",
+        city: profile.profile?.city || "",
+        company_name: profile.company_name || "",
+        user_type: profile.user_type || "regular",
+        profile_picture: undefined
+      }
+
+      setFormData(profileData)
+
+      if (profile.profile?.profile_picture_url) {
+        const timestamp = new Date().getTime()
+        const newAvatarUrl = `${profile.profile.profile_picture_url}?t=${timestamp}`
+        setAvatarUrl(newAvatarUrl)
+        setAvatarKey(prev => prev + 1)
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+      toast({
+        description: (
+          <div className="flex items-center gap-2 p-1">
+            <AlertCircle className="h-4 w-4 text-red-500" />
+            <p>{p('errors.profileFetchFailed')}</p>
+          </div>
+        ),
+        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // Add password validation function
   const validatePassword = (password: string): { isValid: boolean; error?: string } => {
@@ -328,64 +423,6 @@ export default function ProfilePage() {
     return { isValid: true }
   }
 
-  // Fetch profile data whenever profileVersion changes
-  useEffect(() => {
-    fetchUserProfile()
-  }, [profileVersion])
-
-  const fetchUserProfile = async () => {
-    try {
-      setIsLoading(true)
-      const profile = await getUserProfile()
-      console.log('Fetched profile data:', profile)
-
-      // // Redirect regular users to a different page
-      // if (profile.user_type === 'regular') {
-      //   console.log('Regular user detected, redirecting...')
-      //   router.push('/dashboard/coming-soon')
-      //   return
-      // }
-
-      const profileData = {
-        id: profile.id,
-        first_name: profile.first_name || "",
-        last_name: profile.last_name || "",
-        email: profile.email || "",
-        country: profile.country || "",
-        city: profile.profile?.city || "",
-        company_name: profile.company_name || "",
-        user_type: profile.user_type || "regular",
-        profile_picture: undefined
-      }
-
-      console.log('Setting form data:', profileData)
-      setFormData(profileData)
-      setOriginalProfile(profile)
-
-      // Set avatar URL if present
-      if (profile.profile?.profile_picture_url) {
-        const timestamp = new Date().getTime()
-        const newAvatarUrl = `${profile.profile.profile_picture_url}?t=${timestamp}`
-        console.log('Setting initial avatar URL to:', newAvatarUrl)
-        setAvatarUrl(newAvatarUrl)
-        setAvatarKey(prev => prev + 1)
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error)
-      toast({
-        description: (
-          <div className="flex items-center gap-2 p-1">
-            <AlertCircle className="h-4 w-4 text-red-500" />
-            <p>{p('errors.profileFetchFailed')}</p>
-          </div>
-        ),
-        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const handleSubmit = async () => {
     try {
       setIsSaving(true)
@@ -394,22 +431,22 @@ export default function ProfilePage() {
       const changedFields = {} as Partial<UserProfile>
       const profileChanges = {} as any
 
-      if (formData.first_name !== originalProfile?.first_name) {
+      if (formData.first_name !== user.first_name) {
         changedFields.first_name = formData.first_name
       }
-      if (formData.last_name !== originalProfile?.last_name) {
+      if (formData.last_name !== user.last_name) {
         changedFields.last_name = formData.last_name
       }
-      if (formData.country !== originalProfile?.country) {
+      if (formData.country !== user.country) {
         changedFields.country = formData.country
       }
-      if (formData.city !== originalProfile?.city) {
+      if (formData.city !== user.city) {
         profileChanges.city = formData.city
       }
-      if (formData.company_name !== originalProfile?.company_name) {
+      if (formData.company_name !== user.company_name) {
         changedFields.company_name = formData.company_name
       }
-      if (formData.email !== originalProfile?.email) {
+      if (formData.email !== user.email) {
         changedFields.email = formData.email
       }
 
@@ -469,16 +506,15 @@ export default function ProfilePage() {
         profile_picture: undefined // Reset the file input
       })
 
-      // Update original profile
-      setOriginalProfile(updatedProfile)
-
       // Update user store with new profile data
       updateUser({
         first_name: updatedProfile.first_name || "",
         last_name: updatedProfile.last_name || "",
         email: updatedProfile.email || "",
         company_name: updatedProfile.company_name || "",
-        profile_picture: updatedProfile.profile?.profile_picture_url ? 
+        country: updatedProfile.country || "",
+        city: updatedProfile.profile?.city || "",
+        profile_picture_url: updatedProfile.profile?.profile_picture_url ? 
           `${updatedProfile.profile.profile_picture_url}?t=${Date.now()}` : undefined
       })
 
@@ -586,26 +622,84 @@ export default function ProfilePage() {
     }))
   }
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
-        setIsMobileMenuOpen(false)
+  const handlePasswordChange = async () => {
+    try {
+      setIsPasswordSaving(true)
+      
+      // Check password strength
+      const passwordCheck = validatePassword(passwordData.newPassword)
+      if (!passwordCheck.isValid) {
+        toast({
+          description: (
+            <div className="flex items-center gap-2 p-1">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <p>{passwordCheck.error}</p>
+            </div>
+          ),
+          className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+        })
+        setIsPasswordSaving(false)
+        return
       }
-    }
 
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [])
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        toast({
+          description: (
+            <div className="flex items-center gap-2 p-1">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <p>{p('errors.passwordsDoNotMatch')}</p>
+            </div>
+          ),
+          className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+        })
+        setIsPasswordSaving(false)
+        return
+      }
 
-  useEffect(() => {
-    fetchUserProfile()
-  }, [])
+      await changePassword(passwordData.currentPassword, passwordData.newPassword)
+      toast({
+        description: (
+          <div className="flex items-center gap-2 p-1">
+            <CheckCircle2 className="h-4 w-4 text-teal-500" />
+            <p>{p('success.passwordChanged')}</p>
+          </div>
+        ),
+        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+      })
+    } catch (error) {
+      console.error('Error changing password:', error)
+      let errorMessage = p('errors.passwordChangeFailed')
+      
+      if (error instanceof Error) {
+        const errorText = error.message
+        if (errorText === 'Current password is incorrect') {
+          errorMessage = p('errors.currentPasswordIncorrect')
+        } else if (errorText.includes('endpoint not found')) {
+          errorMessage = p('errors.serverError')
+        }
+      }
+      
+      toast({
+        description: (
+          <div className="flex items-center gap-2 p-1">
+            <AlertCircle className="h-4 w-4 text-red-500" />
+            <p>{errorMessage}</p>
+          </div>
+        ),
+        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
+      })
+      
+      // Clear the current password field on incorrect password
+      if (error instanceof Error && error.message === 'Current password is incorrect') {
+        setPasswordData(prev => ({
+          ...prev,
+          currentPassword: ''
+        }))
+      }
+    } finally {
+      setIsPasswordSaving(false)
+    }
+  }
 
   // Only render content after mounting to avoid hydration issues
   if (!mounted) {
@@ -875,87 +969,7 @@ export default function ProfilePage() {
                 </Button>
                 <Button
                   className="bg-teal-600 hover:bg-teal-500 text-white"
-                  onClick={async () => {
-                    if (passwordData.newPassword !== passwordData.confirmPassword) {
-                      toast({
-                        description: (
-                          <div className="flex items-center gap-2 p-1">
-                            <AlertCircle className="h-4 w-4 text-red-500" />
-                            <p>{p('errors.passwordsDoNotMatch')}</p>
-                          </div>
-                        ),
-                        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
-                      })
-                      return
-                    }
-
-                    // Check password strength
-                    const passwordCheck = validatePassword(passwordData.newPassword)
-                    if (!passwordCheck.isValid) {
-                      toast({
-                        description: (
-                          <div className="flex items-center gap-2 p-1">
-                            <AlertCircle className="h-4 w-4 text-red-500" />
-                            <p>{passwordCheck.error}</p>
-                          </div>
-                        ),
-                        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
-                      })
-                      return
-                    }
-                    
-                    try {
-                      setIsPasswordSaving(true)
-                      await changePassword(passwordData.currentPassword, passwordData.newPassword)
-                      toast({
-                        description: (
-                          <div className="flex items-center gap-2 p-1">
-                            <CheckCircle2 className="h-4 w-4 text-teal-500" />
-                            <p>{p('success.passwordChanged')}</p>
-                          </div>
-                        ),
-                        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
-                      })
-                      setIsChangingPassword(false)
-                      setPasswordData({
-                        currentPassword: '',
-                        newPassword: '',
-                        confirmPassword: ''
-                      })
-                    } catch (error) {
-                      console.error('Error changing password:', error)
-                      let errorMessage = p('errors.passwordChangeFailed')
-                      
-                      if (error instanceof Error) {
-                        const errorText = error.message
-                        if (errorText === 'Current password is incorrect') {
-                          errorMessage = p('errors.currentPasswordIncorrect')
-                        } else if (errorText.includes('endpoint not found')) {
-                          errorMessage = p('errors.serverError')
-                        }
-                      }
-                      
-                      toast({
-                        description: (
-                          <div className="flex items-center gap-2 p-1">
-                            <AlertCircle className="h-4 w-4 text-red-500" />
-                            <p>{errorMessage}</p>
-                          </div>
-                        ),
-                        className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
-                      })
-                      
-                      // Clear the current password field on incorrect password
-                      if (error instanceof Error && error.message === 'Current password is incorrect') {
-                        setPasswordData(prev => ({
-                          ...prev,
-                          currentPassword: ''
-                        }))
-                      }
-                    } finally {
-                      setIsPasswordSaving(false)
-                    }
-                  }}
+                  onClick={handlePasswordChange}
                   disabled={isPasswordSaving}
                 >
                   {isPasswordSaving ? (

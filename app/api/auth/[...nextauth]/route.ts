@@ -8,11 +8,37 @@ declare module "next-auth" {
   }
 }
 
-import NextAuth, { NextAuthOptions } from "next-auth";
+// Extend the built-in Session type
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string
+    refreshToken?: string
+    error?: string
+    user: {
+      id?: string
+      user_type?: string
+    } & DefaultSession["user"]
+  }
+}
+
+import NextAuth, { NextAuthOptions, Session, Account, Profile } from "next-auth";
+
+// Extend the NextAuthOptions type to include signOut
+interface ExtendedNextAuthOptions extends NextAuthOptions {
+  callbacks?: {
+    signOut?: (params: {
+      token?: any;
+      session?: Session;
+      account?: Account;
+      profile?: Profile;
+    }) => Promise<void> | void;
+  } & NextAuthOptions['callbacks'];
+}
+
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 
-export const nextAuthOptions: NextAuthOptions = {
+export const nextAuthOptions: ExtendedNextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -219,11 +245,35 @@ export const nextAuthOptions: NextAuthOptions = {
         return `${baseUrl}${url}`;
       }
       return baseUrl;
-    }
+    },
+    async signOut({ token }) {
+      try {
+        // Attempt to invalidate tokens on backend
+        if (token.accessToken && token.refreshToken) {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/signout/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token.accessToken}`
+            },
+            body: JSON.stringify({ refresh_token: token.refreshToken })
+          });
+        }
+      } catch (error) {
+        console.error('Sign out error:', error);
+      }
+    },
   },
   pages: {
     signIn: '/signin',
     error: '/error',
+    signOut: '/api/auth/signout', // Corrected signout page path
+  },
+  events: {
+    async signOut(message) {
+      console.log('NextAuth signOut event:', message);
+      // Optionally add any additional logout logic here
+    }
   },
 }
 

@@ -31,9 +31,9 @@ export default function ProductPortfolioLayout({
   }, [setUser])
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-black">
+    <div className="flex min-h-screen bg-white dark:bg-black">
       {/* Desktop Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-50 hidden md:block w-64">
+      <div className="fixed inset-y-0 left-2 z-50 hidden md:block w-64">
         <Sidebar className="h-full" />
       </div>
 
