@@ -19,7 +19,8 @@ import { LanguageSwitcher } from "../language-switcher"
 import { ModeToggle } from '../mode-toggle';
 
 interface GeoData {
-  geo: string
+  geo: string;
+  name: string;  // Adding name property to GeoData interface
 }
 
 interface Product {
@@ -62,6 +63,22 @@ const TruncatedText = ({ text, maxLength = 100 }: { text: string; maxLength?: nu
   );
 };
 
+const safeParseResponse = async (response: Response) => {
+  const contentType = response.headers.get('content-type');
+  if (contentType?.includes('application/json')) {
+    try {
+      return await response.json();
+    } catch (e) {
+      console.error('Failed to parse JSON response:', e);
+      throw new Error('Invalid JSON response from server');
+    }
+  } else {
+    const text = await response.text();
+    console.error('Received non-JSON response:', text);
+    throw new Error('Server returned non-JSON response');
+  }
+};
+
 export default function ProductList() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -82,25 +99,13 @@ export default function ProductList() {
       setIsLoading(true);
       setError(null);
 
-      // When changing items per page, always start from page 1
       const effectivePage = pageUrl ? currentPage : 1;
-      
       let url = pageUrl || `${buildApiUrl(API_ROUTES.PRODUCTS.LIST)}?page_size=${itemsPerPage}&page=${effectivePage}`;
       
-      // Ensure the URL ends with a trailing slash before query params
       if (!url.includes('?') && !url.endsWith('/')) {
         url = `${url}/`;
       }
 
-      console.log('Request details:', {
-        url,
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session?.accessToken ? 'present' : 'missing'}`,
-          'Content-Type': 'application/json',
-        }
-      });
-      
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${session?.accessToken}`,
@@ -109,83 +114,38 @@ export default function ProductList() {
         redirect: 'follow',
       });
 
-      console.log('Response details:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-        url: response.url
-      });
-
       if (!response.ok) {
         if (response.status === 401) {
-          console.log('Session expired or unauthorized, redirecting to signin...');
           router.push('/signin');
           return;
         }
-        
-        // Handle 404 specifically for invalid page
+
         if (response.status === 404) {
-          const errorData = await response.json();
-          if (errorData.detail === 'Invalid page.') {
-            // Reset to page 1 if current page is invalid
-            setCurrentPage(1);
-            fetchProducts();
-            return;
-          }
+          setCurrentPage(1);
+          fetchProducts();
+          return;
         }
-        
-        let errorMessage = `Failed to fetch products (Status: ${response.status} ${response.statusText})`;
-        try {
-          const errorData = await response.json();
-          console.error('API Error Response:', errorData);
-          errorMessage += `: ${JSON.stringify(errorData)}`;
-        } catch (e) {
-          console.error('Could not parse error response:', e);
-          try {
-            const textError = await response.text();
-            console.error('Raw error response:', textError);
-            errorMessage += ` - ${textError}`;
-          } catch (textError) {
-            console.error('Could not get error text:', textError);
-          }
-        }
-        
-        throw new Error(errorMessage);
+
+        const errorData = await safeParseResponse(response);
+        throw new Error(
+          `API Error (${response.status}): ${
+            typeof errorData === 'object' ? JSON.stringify(errorData) : 'Unknown error'
+          }`
+        );
       }
 
-      const data: ApiResponse = await response.json();
-      console.log('Received data:', {
-        count: data.count,
-        results: data.results.length,
-        next: data.next,
-        previous: data.previous
-      });
-      
+      const data = await safeParseResponse(response);
       setProducts(data.results);
       setTotalCount(data.count);
-      
-      // Update current page based on the response data
+
       if (data.results.length === 0 && currentPage > 1) {
-        // If no results and not on first page, go back to page 1
         setCurrentPage(1);
         fetchProducts();
-        return;
       }
-      
-      // Ensure next/prev URLs have the correct page_size
-      const updateUrlWithPageSize = (url: string | null) => {
-        if (!url) return null;
-        const urlObj = new URL(url);
-        urlObj.searchParams.set('page_size', itemsPerPage.toString());
-        return urlObj.toString();
-      };
-      
-      // setNextPage(updateUrlWithPageSize(data.next));
-      // setPrevPage(updateUrlWithPageSize(data.previous));
 
     } catch (error) {
       console.error('Error fetching products:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred');
+      setError(error instanceof Error ? error.message : 'Failed to fetch products');
     } finally {
       setIsLoading(false);
     }
@@ -264,14 +224,14 @@ export default function ProductList() {
 
   return (
     <>
-      <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
+      <div className="fixed top-0 right-0 flex items-center gap-2 z-50">
         <LanguageSwitcher />
         <ModeToggle />
       </div>
       {showForm ? (
         <ProductForm onClose={() => setShowForm(false)} />
       ) : (
-        <div className="p-8 m-8 md:p-8 bg-white dark:bg-gray-800 min-h-screen">
+        <div className="p-8 m-8 md:p-8 bg-white dark:bg-black min-h-screen">
           <div className="space-y-6">
             <div className="flex items-center justify-between gap-6">
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -310,14 +270,14 @@ export default function ProductList() {
               </Select.Root>
               <Button 
                 onClick={() => setShowForm(true)} 
-                className="bg-[#42B7B0] text-white px-4 py-3 rounded-lg hover:bg-[#42B7B0] transition-colors dark:bg-[#1B4242] dark:hover:bg-[#2C5C5C]"
+                className="bg-[#42B7B0] text-white px-0 py-3 rounded-lg hover:bg-[#42B7B0] transition-colors dark:bg-[#1B4242] dark:hover:bg-[#2C5C5C]"
               >
                 {t('actions.newProduct')}
               </Button>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mt-6">
+          <div className="bg-white dark:bg-black rounded-lg shadow-sm mt-6">
             <Table.Root>
               <Table.Header>
                 <Table.Row className="bg-[#A5D3D1]/20 dark:bg-[#1B4242]/20">
@@ -387,7 +347,7 @@ export default function ProductList() {
                       <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1]">{product.category_name}</Table.Cell>
                       <Table.Cell className="px-2 py-4 text-[#1B4242] dark:text-[#A5D3D1]">{product.epd_verification_year}</Table.Cell>
                       <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1]">
-                      {product.geo?.geo || '-'}
+                        {product.geo?.name || product.geo?.geo || '-'}
                       </Table.Cell>
                       <Table.Cell className="px-6 py-4">
                         <IconButton variant="ghost" className="text-[#42B7B0] dark:text-[#3AA19B] hover:text-[#1B4242] dark:hover:text-[#A5D3D1]">

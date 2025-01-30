@@ -482,6 +482,7 @@
         "total": "Gesamt: {count} Produkte",
         "previous": "Zurück",
         "next": "Weiter"
-      }
+      },
+      "productPortfolio": "Produktportfolio"
     }
 }

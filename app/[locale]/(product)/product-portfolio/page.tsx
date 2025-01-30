@@ -7,7 +7,7 @@ import Loading from '@/app/loading'
 
 export default function Page() {
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-black">
       <main className="flex-1">
         <Suspense fallback={<Loading />}> 
           <ProductList />

@@ -7,7 +7,7 @@ interface ProductFormProps {
 
 const ProductForm: FC<ProductFormProps> = ({ onClose }) => {
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg">
+    <div className="py-6 bg-white dark:bg-black rounded-lg shadow-lg">
       {/* Add your form content */}
       <button 
         onClick={onClose}
