@@ -466,10 +466,11 @@
     "noResults": "No results found"
   },
   "productList": {
-    "searchPlaceholder": "Search here",
+    "productPortfolio": "Product Portfolio",
+    "searchPlaceholder": "Search products...",
     "viewMode": {
-      "list": "List",
-      "grid": "Grid"
+      "list": "List View",
+      "grid": "Grid View"
     },
     "filter": {
       "allProducts": "All products",
