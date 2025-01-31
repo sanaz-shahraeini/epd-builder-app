@@ -282,7 +282,7 @@ export default function EPDPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 mb-4">
       {isComparing ? (
         <div className="bg-white rounded-lg p-6">
           <ProductComparisonComponent
@@ -318,7 +318,7 @@ export default function EPDPage() {
                 value={selectedUser}
                 onValueChange={(value) => handleFilterChange('user', value)}
               >
-                <SelectTrigger className="w-[200px] bg-white border border-gray-200">
+                <SelectTrigger className="w-[200px] bg-white border">
                   <SelectValue placeholder="Select User" />
                 </SelectTrigger>
                 <SelectContent>
@@ -374,7 +374,7 @@ export default function EPDPage() {
                 />
               </div>
               <Button 
-               className="px-6 w-full bg-teal-600 hover:bg-teal-700 text-white text-sm lg:text-base"
+               className="px-6 w-1/3 bg-teal-600 hover:bg-teal-700 text-white text-sm lg:text-base"
                 onClick={handleCompareClick}
                 disabled={selectedForComparison.length < 2}
               >

@@ -6,7 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useToast } from '@/components/ui/use-toast';
 
 // Constants for session management
-const SESSION_TIMEOUT = process.env.NEXT_PUBLIC_SESSION_TIMEOUT || 2 * 60 * 60 * 1000; // 2 hours default
+const SESSION_TIMEOUT = Number(process.env.NEXT_PUBLIC_SESSION_TIMEOUT) || 2 * 60 * 60 * 1000; // 2 hours default
 const WARNING_TIME = 5 * 60 * 1000; // 5 minutes before timeout
 
 export function SessionMonitor() {
@@ -57,7 +57,7 @@ export function SessionMonitor() {
       toast({
         title: "Session Warning",
         description: "Your session will expire in 5 minutes. Please save your work.",
-        variant: "warning",
+        variant: "default",
         duration: 10000,
       });
     };

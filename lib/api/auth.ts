@@ -33,6 +33,7 @@ export interface UserProfile {
     profile_picture?: string;
     profile_picture_url?: string;
   };
+  created_at: string;
 }
 
 export async function checkUsername(username: string): Promise<boolean> {
@@ -319,7 +320,7 @@ export async function updateUserProfile(data: Partial<UserProfile>) {
   // Handle profile fields separately
   if (data.profile) {
     // Handle file upload
-    if (data.profile.profile_picture instanceof File) {
+    if (data.profile && data.profile.profile_picture && (data.profile.profile_picture as any) instanceof File) {
       console.log('Appending profile picture to form data')
       formData.append('profile.profile_picture', data.profile.profile_picture)
     }
@@ -405,7 +406,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
     const responseText = await response.text()
     console.log('Password change response text:', responseText)
 
-    let errorData = {}
+    let errorData: { detail?: string; message?: string; error?: string } = {}
     try {
       errorData = JSON.parse(responseText)
     } catch (e) {
@@ -420,7 +421,7 @@ export async function changePassword(currentPassword: string, newPassword: strin
         throw new Error('Password change endpoint not found. Please check the API endpoint configuration.')
       }
       throw new Error(
-        errorData.detail || 
+        (errorData as any).detail || 
         errorData.message || 
         errorData.error || 
         `Failed to change password (Status: ${response.status})`

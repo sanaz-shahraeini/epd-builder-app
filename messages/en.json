@@ -323,7 +323,8 @@
     "epdBuilder": "EPD Builder",
     "manageEPD": "Manage your EPD creation process",
     "optimizerLCA": "Optimizer LCA",
-    "optimizeEnvironmentalImpact": "Optimize environmental impact with advanced analysis"
+    "optimizeEnvironmentalImpact": "Optimize environmental impact with advanced analysis",
+    "searchPlaceholder": "Search..."
   },
   "Profile": {
     "title": "Profile",
@@ -400,6 +401,12 @@
         "match": "Passwords must match"
       }
     }
+  },
+  "profile": {
+    "companyName": "Company Name",
+    "users": "Users",
+    "new": "New",
+    "addNewUser": "Add New User"
   },
   "epdPreview": "EPD Preview",
   "NotFound": {

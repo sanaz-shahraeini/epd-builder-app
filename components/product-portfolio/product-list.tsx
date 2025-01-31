@@ -29,7 +29,7 @@ interface Product {
   description: string
   industry_solution: string
   epd_verification_year: number
-  geo: GeoData
+  geo: string
   category_name: string
 }
 
@@ -224,10 +224,12 @@ export default function ProductList() {
 
   return (
     <>
-      <div className="fixed top-0 right-0 flex items-center gap-2 z-50">
-        <LanguageSwitcher />
-        <ModeToggle />
-      </div>
+      {!showForm && (
+        <div className="fixed top-8 right-6 flex items-center gap-2 z-50">
+          <LanguageSwitcher />
+          <ModeToggle />
+        </div>
+      )}
       {showForm ? (
         <ProductForm onClose={() => setShowForm(false)} />
       ) : (
@@ -270,7 +272,7 @@ export default function ProductList() {
               </Select.Root>
               <Button 
                 onClick={() => setShowForm(true)} 
-                className="bg-[#42B7B0] text-white px-0 py-3 rounded-lg hover:bg-[#42B7B0] transition-colors dark:bg-[#1B4242] dark:hover:bg-[#2C5C5C]"
+                className="bg-[#3AA19B] text-white px-0 py-3 rounded-lg hover:bg-[#2C5C5C] transition-colors dark:bg-[#1B4242] dark:hover:bg-[#2C5C5C]"
               >
                 {t('actions.newProduct')}
               </Button>
@@ -284,8 +286,8 @@ export default function ProductList() {
                   <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.name')}</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.description')}</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.industrySolution')}</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.category')}</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.verificationYear')}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4 max-w-[150px]">{t('columns.category')}</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-3 py-4">{t('columns.verificationYear')}</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.country')}</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4"></Table.ColumnHeaderCell>
                 </Table.Row>
@@ -338,16 +340,18 @@ export default function ProductList() {
                       }`}
                     >
                       <Table.Cell className="px-4 py-4 text-[#1B4242] dark:text-[#A5D3D1] max-w-md">
-                        <TruncatedText text={product.product_name} maxLength={25} />
+                        <TruncatedText text={product.product_name} maxLength={15} />
                       </Table.Cell>
                       <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1] max-w-md">
-                        <TruncatedText text={product.description} maxLength={140} />
+                        <TruncatedText text={product.description} maxLength={120} />
                       </Table.Cell>
                       <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1]">{product.industry_solution}</Table.Cell>
-                      <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1]">{product.category_name}</Table.Cell>
-                      <Table.Cell className="px-2 py-4 text-[#1B4242] dark:text-[#A5D3D1]">{product.epd_verification_year}</Table.Cell>
+                      <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1] max-w-[150px]">
+                        <TruncatedText text={product.category_name} maxLength={15} />
+                      </Table.Cell>
+                      <Table.Cell className="px-2 py-4 text-[#1B4242] dark:text-[#A5D3D1] w-24">{product.epd_verification_year || 'N/A'}</Table.Cell>
                       <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1]">
-                        {product.geo?.name || product.geo?.geo || '-'}
+                        {product.geo || '-'}
                       </Table.Cell>
                       <Table.Cell className="px-6 py-4">
                         <IconButton variant="ghost" className="text-[#42B7B0] dark:text-[#3AA19B] hover:text-[#1B4242] dark:hover:text-[#A5D3D1]">

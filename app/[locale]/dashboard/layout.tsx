@@ -12,8 +12,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Menu, Users, X } from "lucide-react"
 import { useTranslations, useLocale } from "next-intl"
-import { signOut } from "next-auth/react"
-import Image from 'next/image'
+
 
 export default function DashboardLayout({
   children,

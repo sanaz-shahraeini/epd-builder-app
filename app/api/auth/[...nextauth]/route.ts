@@ -185,7 +185,7 @@ export const nextAuthOptions: ExtendedNextAuthOptions = {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.user_type = user.user_type;
-        token.accessTokenExpires = Date.now() + 2 * 60 * 60 * 1000; // 2 hours
+        token.accessTokenExpires = Date.now() + 12 * 60 * 60 * 1000; // 12 hours
       }
 
       // Return previous token if the access token has not expired yet
@@ -216,7 +216,7 @@ export const nextAuthOptions: ExtendedNextAuthOptions = {
         return {
           ...token,
           accessToken: data.access,
-          accessTokenExpires: Date.now() + 2 * 60 * 60 * 1000, // 2 hours
+          accessTokenExpires: Date.now() + 12 * 60 * 60 * 1000, // 2 hours
           error: undefined, // Clear any previous errors
         };
       } catch (error) {
@@ -226,9 +226,9 @@ export const nextAuthOptions: ExtendedNextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.accessToken = token.accessToken;
-        session.refreshToken = token.refreshToken;
-        session.error = token.error;
+        session.accessToken = token.accessToken as string;
+        session.refreshToken = token.refreshToken as string | undefined;
+        session.error = token.error as string | undefined;
         session.user = {
           ...session.user,
           id: token.id,

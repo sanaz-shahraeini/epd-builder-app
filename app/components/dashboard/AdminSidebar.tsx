@@ -1,55 +1,80 @@
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { useState, useMemo } from "react"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { useUsers } from "@/lib/context/UsersContext"
-import { Input } from "@/components/ui/input"
-import { Search, Loader2, User as UserIcon } from "lucide-react"
-import { UserProfile } from "@/lib/api/auth"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useUsers } from "@/lib/context/UsersContext";
+import { Input } from "@/components/ui/input";
+import { Search, Loader2, User as UserIcon } from "lucide-react";
+import { UserProfile } from "@/lib/api/auth";
+import { useTranslations } from 'next-intl';
 
-interface User extends UserProfile {}
+interface User extends UserProfile {
+  profile?: {
+    created_at?: string;
+    created_at?: string;
+    bio?: string;
+    profile_picture?: string;
+    profile_picture_url?: string;
+  };
+}
 
 interface AdminSidebarProps {
-  currentUser?: User
-  onAddUser: () => void
+  currentUser?: User;
+  onAddUser: () => void;
 }
 
 export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
-  const { users, isLoading } = useUsers()
-  const [searchQuery, setSearchQuery] = useState("")
+  const t = useTranslations();
+  const { users, isLoading } = useUsers();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
-  const filteredUsers = users.filter(user =>
-    user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredUsers = users.filter(
+    (user) =>
+      user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Sort users by creation date and get the two newest users
   const sortedUsers = useMemo(() => {
     return [...filteredUsers].sort((a, b) => {
-      const dateA = a.profile?.created_at ? new Date(a.profile.created_at) : new Date(0)
-      const dateB = b.profile?.created_at ? new Date(b.profile.created_at) : new Date(0)
-      return dateB.getTime() - dateA.getTime()
-    })
-  }, [filteredUsers])
+      const dateA = a.profile?.created_at
+        ? new Date(a.profile.created_at)
+        : new Date(0);
+      const dateB = b.profile?.created_at
+        ? new Date(b.profile.created_at)
+        : new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [filteredUsers]);
 
   const isNewUser = (user: User) => {
-    const userIndex = sortedUsers.findIndex(u => u.id === user.id)
-    return userIndex === 0 || userIndex === 1 // First two users are new
-  }
+    const userIndex = sortedUsers.findIndex((u) => u.id === user.id);
+    return userIndex === 0 || userIndex === 1; // First two users are new
+  };
 
   const getInitials = (user: User) => {
-    return user.username?.[0]?.toUpperCase() || 'U'
-  }
+    return user.username?.[0]?.toUpperCase() || "U";
+  };
+
+  const handleImageError = (userId: number) => {
+    setImageErrors((prev) => ({
+      ...prev,
+      [userId]: true,
+    }));
+  };
 
   return (
     <div className="w-full lg:w-[300px] border-l dark:bg-black">
       <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
         <div className="flex flex-col items-center text-center space-y-3 lg:flex-row lg:text-left lg:space-y-0 lg:space-x-3">
           <Avatar className="h-10 w-10 lg:h-8 lg:w-8">
-            {currentUser?.profile?.profile_picture_url ? (
-              <AvatarImage 
-                src={currentUser.profile.profile_picture_url} 
+            {currentUser?.profile?.profile_picture_url &&
+            !imageErrors[currentUser.id] ? (
+              <AvatarImage
+                src={currentUser.profile.profile_picture_url}
                 alt={currentUser.username}
+                onError={() => handleImageError(currentUser.id)}
               />
             ) : (
               <AvatarFallback className="bg-gray-100 dark:bg-gray-800">
@@ -58,9 +83,11 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
             )}
           </Avatar>
           <div>
-            <h2 className="text-base font-medium">{currentUser?.company_name || 'Company Name'}</h2>
+            <h2 className="text-base font-medium">
+              {currentUser?.company_name || t('profile.companyName')}
+            </h2>
             <div className="flex items-center justify-center lg:justify-start gap-1.5">
-              <p className="text-sm text-muted-foreground">Users</p>
+              <p className="text-sm text-muted-foreground">{t('profile.users')}</p>
               <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-1.5 py-0.5 rounded">
                 {users.length}
               </span>
@@ -71,7 +98,7 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
           <Input
-            placeholder="Search users..."
+            placeholder={t('ProductForm.searchPlaceholder')}
             className="pl-9"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -86,16 +113,21 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="flex items-center justify-center py-4 lg:py-8">
-                <p className="text-sm text-muted-foreground">No users found</p>
+                <p className="text-sm text-muted-foreground">{t('productList.status.noProducts')}</p>
               </div>
             ) : (
               sortedUsers.map((user) => (
-                <div key={user.id} className="flex items-center gap-2 lg:gap-3 p-1.5 lg:p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                <div
+                  key={user.id}
+                  className="flex items-center gap-2 lg:gap-3 p-1.5 lg:p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                >
                   <Avatar className="h-7 w-7 lg:h-8 lg:w-8">
-                    {user.profile?.profile_picture_url ? (
-                      <AvatarImage 
-                        src={user.profile.profile_picture_url} 
+                    {user.profile?.profile_picture_url &&
+                    !imageErrors[user.id] ? (
+                      <AvatarImage
+                        src={user.profile.profile_picture_url}
                         alt={user.username}
+                        onError={() => handleImageError(user.id)}
                       />
                     ) : (
                       <AvatarFallback className="bg-gray-100 dark:bg-gray-800 uppercase">
@@ -110,7 +142,7 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
                       </p>
                       {isNewUser(user) && (
                         <span className="text-[10px] lg:text-xs text-teal-500 font-medium px-1.5 py-0.5 lg:px-2 lg:py-1 bg-teal-50 dark:bg-teal-950 rounded-full">
-                          New
+                          {t('profile.new')}
                         </span>
                       )}
                     </div>
@@ -118,9 +150,9 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
                       <p className="text-xs lg:text-sm text-muted-foreground truncate">
                         {user.email}
                       </p>
-                      {user.user_type === 'admin' && (
+                      {user.user_type === "admin" && (
                         <span className="text-[10px] lg:text-xs text-blue-500 font-medium px-1.5 py-0.5 lg:px-2 lg:py-1 bg-blue-50 dark:bg-blue-950 rounded-full">
-                          Admin
+                          {t('navigation.administrative')}
                         </span>
                       )}
                     </div>
@@ -131,13 +163,13 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
           </div>
         </ScrollArea>
 
-        <Button 
+        <Button
           onClick={onAddUser}
           className="w-full bg-teal-600 hover:bg-teal-700 text-white text-sm lg:text-base"
         >
-          + Add New User
+          {t('profile.addNewUser')}
         </Button>
       </div>
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LayoutDashboard, FileText, Settings, Search, MessageSquare, LogOut, Menu } from 'lucide-react'
 import Link from "next/link"
@@ -8,10 +8,21 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useUserStore } from '@/lib/store/user'
-import { getUserProfile } from '@/lib/api/auth'
+import { getUserProfile,UserProfile } from '@/lib/api/auth'
 import { ROUTES } from '@/i18n/navigation'
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
+
+
+
+
+interface User extends UserProfile {
+  profile?: {
+    created_at?: string;
+    bio?: string;
+    profile_picture?: string;
+    profile_picture_url?: string;
+  };
+}
+
 
 const getNavigationItems = (t: (key: string) => string) => [
   {
@@ -42,11 +53,21 @@ const getNavigationItems = (t: (key: string) => string) => [
   }
 ]
 
-export function Sidebar() {
+interface SidebarProps {}
+
+const Sidebar: React.FC<SidebarProps> = () => {
   const pathname = usePathname()
   const t = useTranslations('navigation')
   const navigation = getNavigationItems(t)
   const { user, setUser } = useUserStore()
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
+
+  const handleImageError = (userId: number) => {
+    setImageErrors((prev) => ({
+      ...prev,
+      [userId]: true,
+    }));
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -54,15 +75,17 @@ export function Sidebar() {
         const userProfile = await getUserProfile()
         
         if (userProfile) {
+          let profilePictureUrl = userProfile.profile?.profile_picture_url || userProfile.profile?.profile_picture || ""
+          
+          // Ensure the URL is absolute
+          if (profilePictureUrl && !profilePictureUrl.match(/^(http|https):\/\//)) {
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') || ''
+            profilePictureUrl = `${baseUrl}${profilePictureUrl.startsWith('/') ? '' : '/'}${profilePictureUrl}`
+          }
+
           const userData = {
-            id: userProfile.id,
-            first_name: userProfile.first_name || "",
-            last_name: userProfile.last_name || "",
-            email: userProfile.email || "",
-            user_type: userProfile.user_type || "regular",
-            profile_picture_url: userProfile.profile?.profile_picture_url || userProfile.profile?.profile_picture || "",
-            company_name: userProfile.company_name || "",
-            username: userProfile.username || "",
+            ...userProfile,
+            profile_picture_url: profilePictureUrl,
           }
           setUser(userData)
         }
@@ -78,29 +101,29 @@ export function Sidebar() {
     <div className="flex flex-col h-full bg-white border-r w-64 py-6 overflow-x-hidden">
       <div className="px-4 mb-8">
         <Image
-          src="./assets/images/logo.png"
+          src="/assets/images/logo.png"
           alt="TerraNEXT"
-          fill
+          width={150}
+          height={40}
           priority
-          style={{ objectFit: 'contain' }}
+          className="w-auto h-auto"
         />
       </div>
 
       <div className="px-4 mb-6">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
-            {user?.profile_picture_url ? (
+            {user?.profile_picture_url && !imageErrors[user?.id || 0] ? (
               <AvatarImage 
-                src={user.profile_picture_url} 
-                alt={user?.username || 'User'} 
+                src={user.profile_picture_url}
+                alt={user?.username || 'User'}
                 className="object-cover"
-                onError={(e) => {
-                  console.error('Image load error:', e);
-                  e.currentTarget.style.display = 'none';
-                }}
+                onError={() => user?.id && handleImageError(user.id)}
               />
             ) : (
-              <AvatarFallback>{(user?.first_name?.[0] || 'U').toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="bg-gray-100">
+                {user?.first_name?.[0] || user?.username?.[0] || 'U'}
+              </AvatarFallback>
             )}
           </Avatar>
           <div className="flex flex-col overflow-hidden">
@@ -185,3 +208,5 @@ export function Sidebar() {
     </div>
   )
 }
+
+export { Sidebar }

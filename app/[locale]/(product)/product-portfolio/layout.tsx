@@ -43,7 +43,7 @@ export default function ProductPortfolioLayout({
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon">
               <Menu className="h-6 w-6" />
-              {/* <span className="sr-only">Toggle Menu</span> */}
+              <span className="sr-only">Toggle Menu</span>
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0 bg-white dark:bg-black border-r dark:border-gray-800">
@@ -51,7 +51,7 @@ export default function ProductPortfolioLayout({
             <Sidebar className="h-full" />
           </SheetContent>
         </Sheet>
-        {/* <ModeToggle /> */}
+        <ModeToggle />
       </div>
 
       {/* Main Content */}

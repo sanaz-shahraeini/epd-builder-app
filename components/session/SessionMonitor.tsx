@@ -5,8 +5,8 @@ import { useSession, signOut } from 'next-auth/react';
 import { refreshAccessToken } from '@/lib/api/auth';
 import { useRouter } from 'next/navigation';
 
-const SESSION_CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
-const TOKEN_REFRESH_THRESHOLD = 10 * 60 * 1000; // Refresh if less than 10 minutes left
+const SESSION_CHECK_INTERVAL = 20 * 60 * 1000; // Check every 5 minutes
+const TOKEN_REFRESH_THRESHOLD = 30 * 60 * 1000; // Refresh if less than 10 minutes left
 
 export function SessionMonitor() {
   const { data: session, update } = useSession();

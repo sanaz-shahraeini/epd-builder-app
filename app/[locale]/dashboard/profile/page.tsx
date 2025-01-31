@@ -22,20 +22,7 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 import { signOut, useSession } from "next-auth/react"
 import { useUserStore } from '@/lib/store/user'
 import { useUsers } from "@/lib/context/UsersContext"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Sidebar } from "@/components/sidebar"
+
 
 const tabs = ["myEPDs", "inbox", "dataDirectory", "myProfile"] as const
 
@@ -237,7 +224,9 @@ const countries = [
 
 type CountryValue = typeof countries[number]['value'];
 
-export default function ProfilePage() {
+interface ProfilePageProps {}
+
+const ProfilePage: React.FC<ProfilePageProps> = () => {
   const [mounted, setMounted] = useState(false)
   const [activeTab, setActiveTab] = useState<typeof tabs[number]>("myProfile")
   const [isLoading, setIsLoading] = useState(true)
@@ -283,6 +272,8 @@ export default function ProfilePage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isProfileSaving, setIsProfileSaving] = useState(false)
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false)
 
   const t = useTranslations()
   const n = useTranslations('navigation')
@@ -310,7 +301,7 @@ export default function ProfilePage() {
             last_name: profile.last_name || "",
             email: profile.email || "",
             country: profile.country || "",
-            city: profile.profile?.city || "",
+            city: profile.profile?.city || "", // Fix: Access city from profile.profile
             company_name: profile.company_name || "",
             user_type: profile.user_type || "regular",
             profile_picture: undefined
@@ -356,7 +347,7 @@ export default function ProfilePage() {
 
   const fetchUserProfile = async () => {
     try {
-      setIsLoading(true)
+      setIsFetchingProfile(true)
       const profile = await getUserProfile()
       
       if (!profile) return
@@ -367,7 +358,7 @@ export default function ProfilePage() {
         last_name: profile.last_name || "",
         email: profile.email || "",
         country: profile.country || "",
-        city: profile.profile?.city || "",
+        city: profile.profile?.city || "", // Fix: Access city from profile.profile
         company_name: profile.company_name || "",
         user_type: profile.user_type || "regular",
         profile_picture: undefined
@@ -393,7 +384,7 @@ export default function ProfilePage() {
         className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
       })
     } finally {
-      setIsLoading(false)
+      setIsFetchingProfile(false)
     }
   }
 
@@ -425,28 +416,28 @@ export default function ProfilePage() {
 
   const handleSubmit = async () => {
     try {
-      setIsSaving(true)
+      setIsProfileSaving(true)
       
       // Only include fields that have changed
       const changedFields = {} as Partial<UserProfile>
       const profileChanges = {} as any
 
-      if (formData.first_name !== user.first_name) {
+      if (user && formData.first_name !== user.first_name) {
         changedFields.first_name = formData.first_name
       }
-      if (formData.last_name !== user.last_name) {
+      if (user && formData.last_name !== user.last_name) {
         changedFields.last_name = formData.last_name
       }
-      if (formData.country !== user.country) {
+      if (user && formData.country !== user.country) {
         changedFields.country = formData.country
       }
-      if (formData.city !== user.city) {
+      if (user && formData.city !== user.city) {
         profileChanges.city = formData.city
       }
-      if (formData.company_name !== user.company_name) {
+      if (user && formData.company_name !== user.company_name) {
         changedFields.company_name = formData.company_name
       }
-      if (formData.email !== user.email) {
+      if (user && formData.email !== user.email) {
         changedFields.email = formData.email
       }
 
@@ -473,7 +464,7 @@ export default function ProfilePage() {
           ),
           className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
         })
-        setIsSaving(false)
+        setIsProfileSaving(false)
         return
       }
 
@@ -592,7 +583,7 @@ export default function ProfilePage() {
         className: "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-black dark:text-white border border-gray-200/20 dark:border-gray-700/30 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-lg",
       })
     } finally {
-      setIsSaving(false)
+      setIsProfileSaving(false)
     }
   }
 
@@ -702,11 +693,7 @@ export default function ProfilePage() {
   }
 
   // Only render content after mounting to avoid hydration issues
-  if (!mounted) {
-    return null
-  }
-
-  if (isLoading) {
+  if (!mounted || isLoading || isFetchingProfile) {
     return (
       <div className="space-y-6">
         {/* Avatar Loading Skeleton */}
@@ -768,6 +755,7 @@ export default function ProfilePage() {
             className="hidden"
             accept="image/*"
             onChange={handleFileChange}
+            title="Upload profile picture"
           />
           <div className="relative">
             <Avatar 
@@ -998,9 +986,9 @@ export default function ProfilePage() {
         <Button 
           className="w-full bg-teal-600 hover:bg-teal-500 text-white font-medium" 
           onClick={handleSubmit}
-          disabled={isSaving}
+          disabled={isProfileSaving || isSaving}
         >
-          {isSaving ? (
+          {isProfileSaving || isSaving ? (
             <div className="flex items-center justify-center gap-2">
               <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
               <span>{p('saving')}</span>
@@ -1013,3 +1001,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+export default ProfilePage;
