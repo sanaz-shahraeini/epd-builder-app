@@ -47,7 +47,7 @@ interface IbuData {
   classific_system: string
   type: string
   pdf_url: string | null
-  ref_year: number
+  ref_year: string
   valid_until: number
   owner: string
   sub_type: string
@@ -178,22 +178,27 @@ export default function EPDPage() {
   // Get unique values for select boxes from the unfiltered data
   const getUniqueValues = async () => {
     try {
-      // Fetch all data without pagination for getting unique values
       const response = await fetch(
         buildApiUrl(`${API_ROUTES.PRODUCTS.IBU_DATA}/?page_size=1000`)
       );
       const data = await response.json();
       
-      // Get unique classifications
-      const classifications = Array.from(new Set(data.results.map(item => item.classific)))
+      // Fix the classifications array type handling
+      const classificationSet = new Set(data.results.map((item: IbuData) => item.classific));
+      const classifications = Array.from(classificationSet)
         .filter(Boolean)
-        .sort();
+        .sort() as string[];
+        
       setUniqueClassifications(classifications);
 
-      // Get unique years
-      const years = Array.from(new Set(data.results.map(item => item.ref_year)))
-        .filter(Boolean)
+      // Fix the years array type handling
+      const yearsSet = new Set(
+        data.results.map((item: IbuData) => parseInt(item.ref_year))
+      );
+      const years = Array.from(yearsSet)
+        .filter((year): year is number => typeof year === 'number' && !isNaN(year))
         .sort((a, b) => b - a);
+        
       setUniqueYears(years);
     } catch (error) {
       console.error('Error fetching unique values:', error);
@@ -289,81 +294,84 @@ export default function EPDPage() {
             selectedProducts={selectedForComparison}
             onRemoveProduct={handleRemoveFromComparison}
             onAddProduct={handleAddProduct}
+            selectedClassification={selectedClassification}
           />
         </div>
       ) : (
         <>
           {/* Header Section */}
           <div className="flex flex-col gap-4">
-            {/* Filters Row */}
-            <div className="flex items-center gap-4">
-              {/* Projects/Classifications Select */}
-              <Select
-                value={selectedClassification}
-                onValueChange={(value) => handleFilterChange('classification', value)}
-              >
-                <SelectTrigger className="w-[200px] bg-white border border-gray-200">
-                  <SelectValue placeholder="Industry Solutions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Industry Solutions</SelectItem>
-                  {uniqueClassifications.map(classific => (
-                    <SelectItem key={classific} value={classific}>{classific}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Filters Row - Now scrollable on mobile */}
+            <ScrollArea className="w-full pb-4">
+              <div className="flex items-center gap-4 min-w-max">
+                {/* Projects/Classifications Select */}
+                <Select
+                  value={selectedClassification}
+                  onValueChange={(value) => handleFilterChange('classification', value)}
+                >
+                  <SelectTrigger className="w-[180px] md:w-[200px] bg-white border border-gray-200">
+                    <SelectValue placeholder="Industry Solutions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Industry Solutions</SelectItem>
+                    {uniqueClassifications.map(classific => (
+                      <SelectItem key={classific} value={classific}>{classific}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              {/* Users Select */}
-              <Select
-                value={selectedUser}
-                onValueChange={(value) => handleFilterChange('user', value)}
-              >
-                <SelectTrigger className="w-[200px] bg-white border">
-                  <SelectValue placeholder="Select User" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  {users.map(user => (
-                    <SelectItem key={user.id} value={user.id}>{user.username || user.email}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {/* Users Select */}
+                <Select
+                  value={selectedUser}
+                  onValueChange={(value) => handleFilterChange('user', value)}
+                >
+                  <SelectTrigger className="w-[180px] md:w-[200px] bg-white border">
+                    <SelectValue placeholder="Select User" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Users</SelectItem>
+                    {users.map(user => (
+                      <SelectItem key={user.id} value={user.id.toString()}>{user.username || user.email}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              {/* Dates Select */}
-              <Select
-                value={selectedYear}
-                onValueChange={(value) => handleFilterChange('year', value)}
-              >
-                <SelectTrigger className="w-[200px] bg-white border border-gray-200">
-                  <SelectValue placeholder="Reference Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Years</SelectItem>
-                  {uniqueYears.map(year => (
-                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {/* Dates Select */}
+                <Select
+                  value={selectedYear}
+                  onValueChange={(value) => handleFilterChange('year', value)}
+                >
+                  <SelectTrigger className="w-[180px] md:w-[200px] bg-white border border-gray-200">
+                    <SelectValue placeholder="Reference Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Years</SelectItem>
+                    {uniqueYears.map(year => (
+                      <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              {/* Status Select */}
-              <Select
-                value={selectedStatus}
-                onValueChange={(value) => handleFilterChange('status', value)}
-              >
-                <SelectTrigger className="w-[200px] bg-white border border-gray-200">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                {/* Status Select */}
+                <Select
+                  value={selectedStatus}
+                  onValueChange={(value) => handleFilterChange('status', value)}
+                >
+                  <SelectTrigger className="w-[180px] md:w-[200px] bg-white border border-gray-200">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </ScrollArea>
 
-            {/* Search and Compare Row */}
-            <div className="flex justify-between items-center">
-              <div className="relative w-[300px]">
+            {/* Search and Compare Row - Stack on mobile */}
+            <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
+              <div className="relative w-full sm:w-[300px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <Input
                   type="text"
@@ -374,7 +382,7 @@ export default function EPDPage() {
                 />
               </div>
               <Button 
-               className="px-6 w-1/3 bg-teal-600 hover:bg-teal-700 text-white text-sm lg:text-base"
+                className="px-6 w-full sm:w-1/3 bg-teal-600 hover:bg-teal-700 text-white text-sm lg:text-base"
                 onClick={handleCompareClick}
                 disabled={selectedForComparison.length < 2}
               >
@@ -383,8 +391,8 @@ export default function EPDPage() {
             </div>
           </div>
 
-          {/* EPD Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* EPD Cards Grid - Adjust columns for mobile */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {loading ? (
               // Loading skeletons
               Array.from({ length: 6 }).map((_, index) => (
@@ -499,9 +507,9 @@ export default function EPDPage() {
             )}
           </div>
 
-          {/* Pagination */}
+          {/* Pagination - Adjust for mobile */}
           {totalPages > 0 && (
-            <div className="flex justify-center items-center gap-1 mt-8">
+            <div className="flex justify-center items-center gap-1 mt-8 px-2 max-w-full overflow-x-auto">
               {/* Previous button */}
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
@@ -615,7 +623,7 @@ export default function EPDPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <path d="m9 18-6-6 6-6"/>
+                  <path d="m9 6 6 6-6 6"/>
                 </svg>
               </button>
             </div>
@@ -623,7 +631,7 @@ export default function EPDPage() {
 
           {/* Total Items Count */}
           {!loading && (
-            <div className="text-center text-sm text-gray-500 mt-2">
+            <div className="text-center text-xs sm:text-sm text-gray-500 mt-2 px-2">
               Showing {Math.min(totalItems, ((currentPage - 1) * PAGE_SIZE) + 1)}-{Math.min(currentPage * PAGE_SIZE, totalItems)} of {totalItems} items
             </div>
           )}
@@ -633,19 +641,23 @@ export default function EPDPage() {
   );
 }
 
+interface ProductComparisonProps {
+  selectedProducts: IbuData[];
+  onRemoveProduct: (productId: string) => void;
+  onAddProduct: () => void;
+  selectedClassification: string;
+}
+
 function ProductComparison({
   selectedProducts,
   onRemoveProduct,
   onAddProduct,
-}: {
-  selectedProducts: IbuData[];
-  onRemoveProduct: (productId: string) => void;
-  onAddProduct: () => void;
-}) {
+  selectedClassification,
+}: ProductComparisonProps) {
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-lg font-medium">Product Comparison</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {selectedProducts.map((product) => (
           <Card key={product.uuid} className="bg-white border border-gray-200 overflow-hidden">
             {/* Product Image */}
@@ -702,15 +714,16 @@ function ProductComparison({
         ))}
       </div>
 
-      <div className="flex justify-between items-center">
+      {/* Update buttons layout for mobile */}
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-0 sm:justify-between sm:items-center">
         <Button 
-          className="bg-teal-500 hover:bg-teal-600 text-white px-6"
+          className="w-full sm:w-auto bg-teal-500 hover:bg-teal-600 text-white px-6"
           onClick={onAddProduct}
         >
           Add more products
         </Button>
         <Button 
-          className="bg-teal-500 hover:bg-teal-600 text-white px-6"
+          className="w-full sm:w-auto bg-teal-500 hover:bg-teal-600 text-white px-6"
           onClick={() => onRemoveProduct(selectedProducts[0].uuid)}
         >
           Remove product
@@ -719,3 +732,4 @@ function ProductComparison({
     </div>
   );
 }
+
