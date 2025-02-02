@@ -1,6 +1,5 @@
 "use client"
-import React from 'react'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   Table,
@@ -17,6 +16,10 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { LanguageSwitcher } from "../language-switcher"
 import { ModeToggle } from '../mode-toggle';
+
+import "@radix-ui/themes/styles.css";
+import ProductPortfolio from "@/components/product-portfolio/product-grid"
+import Loading from '@/app/loading'
 
 interface GeoData {
   geo: string;
@@ -79,7 +82,7 @@ const safeParseResponse = async (response: Response) => {
   }
 };
 
-export default function ProductList() {
+export default function ProductListComponent() {
   const { data: session } = useSession();
   const router = useRouter();
   const t = useTranslations('productList')
@@ -93,6 +96,11 @@ export default function ProductList() {
   const [currentPage, setCurrentPage] = useState(1)
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const [showForm, setShowForm] = useState(false)
+  const [view, setView] = useState<"grid" | "list">("list");
+
+  const handleViewChange = (view: string) => {
+    setView(view === "Grid" ? "grid" : "list");
+  };
 
   const fetchProducts = async (pageUrl?: string) => {
     try {
@@ -253,11 +261,11 @@ export default function ProductList() {
                   width="18"
                 />
               </Box>
-              <Select.Root value="List">
+              <Select.Root onValueChange={handleViewChange} value={view === "grid" ? "Grid" : "List"}>
                 <Select.Trigger className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20 focus:ring-2 focus:ring-[#42B7B0] dark:text-white" />
                 <Select.Content>
-                  <Select.Item value="List">{t('viewMode.list')}</Select.Item>
-                  <Select.Item value="Grid">{t('viewMode.grid')}</Select.Item>
+                  <Select.Item value="List">List</Select.Item>
+                  <Select.Item value="Grid">Grid</Select.Item>
                 </Select.Content>
               </Select.Root>
             </div>
@@ -279,91 +287,95 @@ export default function ProductList() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-black rounded-lg shadow-sm mt-6">
-            <Table.Root>
-              <Table.Header>
-                <Table.Row className="bg-[#A5D3D1]/20 dark:bg-[#1B4242]/20">
-                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.name')}</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.description')}</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.industrySolution')}</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4 max-w-[150px]">{t('columns.category')}</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-3 py-4">{t('columns.verificationYear')}</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.country')}</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4"></Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-
-              <Table.Body>
-                {isLoading ? (
-                  <Table.Row key="loading-row">
-                    <Table.Cell colSpan={7} className="text-center py-8 dark:text-gray-300">
-                      <ReloadIcon className="animate-spin inline-block mr-2 text-[#42B7B0] dark:text-[#3AA19B]" />
-                      {t('status.loading')}
-                    </Table.Cell>
-                  </Table.Row>
-                ) : error ? (
-                  <Table.Row key="error-row">
-                    <Table.Cell colSpan={7} className="text-center py-8 text-red-500 dark:text-red-400">
-                      {error}
-                      <Button 
-                        variant="soft" 
-                        className="ml-4 text-[#42B7B0] dark:text-[#3AA19B] hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20"
-                        onClick={() => fetchProducts()}
-                      >
-                        {t('actions.retry')}
-                      </Button>
-                    </Table.Cell>
-                  </Table.Row>
-                ) : filteredProducts.length === 0 ? (
-                  <Table.Row key="empty-row">
-                    <Table.Cell colSpan={7} className="text-center py-8 text-[#5C8374] dark:text-[#A5D3D1]">
-                      {searchTerm ? t('status.noSearchResults') : t('status.noProducts')}
-                      {error && (
-                        <Button 
-                          variant="soft" 
-                          className="ml-4 text-[#42B7B0] dark:text-[#3AA19B] hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20"
-                          onClick={() => fetchProducts()}
-                        >
-                          {t('actions.retry')}
-                        </Button>
-                      )}
-                    </Table.Cell>
-                  </Table.Row>
-                ) : (
-                  filteredProducts.map((product, index) => (
-                    <Table.Row 
-                      key={`product-${product.id || `${product.product_name}-${index}`}`} 
-                      className={`${
-                        index % 2 === 0 
-                          ? 'hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20' 
-                          : 'bg-[#A5D3D1]/10 dark:bg-[#1B4242]/10 hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20'
-                      }`}
-                    >
-                      <Table.Cell className="px-4 py-4 text-[#1B4242] dark:text-[#A5D3D1] max-w-md">
-                        <TruncatedText text={product.product_name} maxLength={15} />
-                      </Table.Cell>
-                      <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1] max-w-md">
-                        <TruncatedText text={product.description} maxLength={120} />
-                      </Table.Cell>
-                      <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1]">{product.industry_solution}</Table.Cell>
-                      <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1] max-w-[150px]">
-                        <TruncatedText text={product.category_name} maxLength={15} />
-                      </Table.Cell>
-                      <Table.Cell className="px-2 py-4 text-[#1B4242] dark:text-[#A5D3D1] w-24">{product.epd_verification_year || 'N/A'}</Table.Cell>
-                      <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1]">
-                        {product.geo || '-'}
-                      </Table.Cell>
-                      <Table.Cell className="px-6 py-4">
-                        <IconButton variant="ghost" className="text-[#42B7B0] dark:text-[#3AA19B] hover:text-[#1B4242] dark:hover:text-[#A5D3D1]">
-                          <DotsVerticalIcon />
-                        </IconButton>
-                      </Table.Cell>
+          <Suspense fallback={<Loading />}>
+            {view === "grid" ? <ProductPortfolio /> : (
+              <div className="bg-white dark:bg-black rounded-lg shadow-sm mt-6">
+                <Table.Root>
+                  <Table.Header>
+                    <Table.Row className="bg-[#A5D3D1]/20 dark:bg-[#1B4242]/20">
+                      <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.name')}</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.description')}</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.industrySolution')}</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4 max-w-[150px]">{t('columns.category')}</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-3 py-4">{t('columns.verificationYear')}</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4">{t('columns.country')}</Table.ColumnHeaderCell>
+                      <Table.ColumnHeaderCell className="font-semibold text-[#1B4242] dark:text-[#42B7B0] px-6 py-4"></Table.ColumnHeaderCell>
                     </Table.Row>
-                  ))
-                )}
-              </Table.Body>
-            </Table.Root>
-          </div>
+                  </Table.Header>
+
+                  <Table.Body>
+                    {isLoading ? (
+                      <Table.Row key="loading-row">
+                        <Table.Cell colSpan={7} className="text-center py-8 dark:text-gray-300">
+                          <ReloadIcon className="animate-spin inline-block mr-2 text-[#42B7B0] dark:text-[#3AA19B]" />
+                          {t('status.loading')}
+                        </Table.Cell>
+                      </Table.Row>
+                    ) : error ? (
+                      <Table.Row key="error-row">
+                        <Table.Cell colSpan={7} className="text-center py-8 text-red-500 dark:text-red-400">
+                          {error}
+                          <Button 
+                            variant="soft" 
+                            className="ml-4 text-[#42B7B0] dark:text-[#3AA19B] hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20"
+                            onClick={() => fetchProducts()}
+                          >
+                            {t('actions.retry')}
+                          </Button>
+                        </Table.Cell>
+                      </Table.Row>
+                    ) : filteredProducts.length === 0 ? (
+                      <Table.Row key="empty-row">
+                        <Table.Cell colSpan={7} className="text-center py-8 text-[#5C8374] dark:text-[#A5D3D1]">
+                          {searchTerm ? t('status.noSearchResults') : t('status.noProducts')}
+                          {error && (
+                            <Button 
+                              variant="soft" 
+                              className="ml-4 text-[#42B7B0] dark:text-[#3AA19B] hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20"
+                              onClick={() => fetchProducts()}
+                            >
+                              {t('actions.retry')}
+                            </Button>
+                          )}
+                        </Table.Cell>
+                      </Table.Row>
+                    ) : (
+                      filteredProducts.map((product, index) => (
+                        <Table.Row 
+                          key={`product-${product.id || `${product.product_name}-${index}`}`} 
+                          className={`${
+                            index % 2 === 0 
+                              ? 'hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20' 
+                              : 'bg-[#A5D3D1]/10 dark:bg-[#1B4242]/10 hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20'
+                          }`}
+                        >
+                          <Table.Cell className="px-4 py-4 text-[#1B4242] dark:text-[#A5D3D1] max-w-md">
+                            <TruncatedText text={product.product_name} maxLength={15} />
+                          </Table.Cell>
+                          <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1] max-w-md">
+                            <TruncatedText text={product.description} maxLength={120} />
+                          </Table.Cell>
+                          <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1]">{product.industry_solution}</Table.Cell>
+                          <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1] max-w-[150px]">
+                            <TruncatedText text={product.category_name} maxLength={15} />
+                          </Table.Cell>
+                          <Table.Cell className="px-2 py-4 text-[#1B4242] dark:text-[#A5D3D1] w-24">{product.epd_verification_year || 'N/A'}</Table.Cell>
+                          <Table.Cell className="px-6 py-4 text-[#1B4242] dark:text-[#A5D3D1]">
+                            {product.geo || '-'}
+                          </Table.Cell>
+                          <Table.Cell className="px-6 py-4">
+                            <IconButton variant="ghost" className="text-[#42B7B0] dark:text-[#3AA19B] hover:text-[#1B4242] dark:hover:text-[#A5D3D1]">
+                              <DotsVerticalIcon />
+                            </IconButton>
+                          </Table.Cell>
+                        </Table.Row>
+                      ))
+                    )}
+                  </Table.Body>
+                </Table.Root>
+              </div>
+            )}
+          </Suspense>
 
           {totalPages > 1 && (
             <div className="mt-6 flex items-center justify-center gap-2">

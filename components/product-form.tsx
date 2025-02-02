@@ -497,7 +497,7 @@ export default function ProductForm() {
             <Button
               variant="outline"
               className="w-full justify-start gap-2 h-14"
-              onClick={() => handleNextStepClick('/dashboard/input-data')}
+              onClick={() => handleNextStepClick('/product-portfolio/input-data')}
             >
               <FileCheck className="h-5 w-5 text-teal-600" />
               <div className="text-left">

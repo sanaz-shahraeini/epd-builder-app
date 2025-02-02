@@ -8,11 +8,8 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { useUserStore } from '@/lib/store/user'
-import { getUserProfile,UserProfile } from '@/lib/api/auth'
+import { getUserProfile, UserProfile } from '@/lib/api/auth'
 import { ROUTES } from '@/i18n/navigation'
-
-
-
 
 interface User extends UserProfile {
   profile?: {
@@ -22,7 +19,6 @@ interface User extends UserProfile {
     profile_picture_url?: string;
   };
 }
-
 
 const getNavigationItems = (t: (key: string) => string) => [
   {

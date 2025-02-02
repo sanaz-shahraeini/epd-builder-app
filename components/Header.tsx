@@ -32,7 +32,8 @@ const Header = ({
   const router = useRouter();
   const pathname = usePathname();
   
-  const isProductPortfolio = pathname?.includes('product-portfolio');
+  const isProductPortfolio = router.pathname?.startsWith('/product-portfolio/');
+  const isInputData = router.pathname?.startsWith('/dashboard/input-data/');
 
   const getInitials = () => {
     if (!user) return 'UN'
@@ -113,7 +114,7 @@ const Header = ({
       </div>
 
       {/* Navigation Tabs */}
-      {!isProductPortfolio && (
+      {(!isProductPortfolio || !isInputData) && (
         <div className="border-b border-gray-200 dark:border-gray-800">
           <nav className="flex justify-start px-4 ml-auto w-[700px] overflow-x-auto space-x-4">
             {tabs.map((tab) => {

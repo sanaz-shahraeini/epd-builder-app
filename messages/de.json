@@ -429,27 +429,46 @@
         "placeholder": "Klassifikation",
         "all": "Alle Klassifikationen"
       },
-      "location": {
-        "placeholder": "Standort",
-        "all": "Alle Standorte"
+      "users": {
+        "placeholder": "Benutzer auswählen",
+        "all": "Alle Benutzer"
       },
       "year": {
-        "placeholder": "Jahr",
-        "all": "Alle Jahre",
-        "newest": "Neueste",
-        "oldest": "Älteste"
+        "placeholder": "Referenzjahr",
+        "all": "Alle Jahre"
+      },
+      "status": {
+        "placeholder": "Status",
+        "all": "Alle Status",
+        "verified": "Verifiziert",
+        "pending": "Ausstehend"
       },
       "search": {
-        "placeholder": "Nach Produktnamen suchen..."
+        "placeholder": "EPDs durchsuchen"
       }
+    },
+    "comparison": {
+      "title": "Produktvergleich",
+      "button": "Produktvergleich ({count}/3)",
+      "addMore": "Weitere Produkte hinzufügen",
+      "remove": "Produkt entfernen"
     },
     "card": {
       "verified": "Verifiziert",
+      "pending": "Ausstehend",
       "viewPDF": "PDF anzeigen",
-      "noPDF": "Kein PDF verfügbar"
+      "industry": "Industrielösungen",
+      "country": "Land",
+      "id": "ID"
     },
     "loading": "EPD-Daten werden geladen...",
-    "noResults": "Keine Ergebnisse gefunden"
+    "noResults": {
+      "pending": "Derzeit keine ausstehenden EPDs verfügbar",
+      "filtered": "Keine Ergebnisse für die ausgewählten Filter gefunden"
+    },
+    "pagination": {
+      "showing": "Zeige {start}-{end} von {total} Einträgen"
+    }
   },
   "productList": {
     "searchPlaceholder": "Hier suchen",

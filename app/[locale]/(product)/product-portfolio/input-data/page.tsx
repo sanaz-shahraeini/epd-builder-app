@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { FileSpreadsheet, PenLine, ArrowLeft } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Sidebar } from "@/components/sidebar"
+
 import { UIModeDialog } from "@/components/ui-mode-dialog"
 import { RightSidebar } from "@/components/right-sidebar"
 import { useRouter } from 'next/navigation'
@@ -24,13 +24,13 @@ export default function InputDataPage() {
 
   const handleFeedbackAction = (action: 'later' | 'share') => {
     setIsFeedbackDialogOpen(false)
-    router.push('/excel-upload')
+    router.push('product-portfolio/excel-upload')
   }
 
   return (
     <div className="flex min-h-screen bg-gray-50 dark:bg-black">
-      <Sidebar />
-      <main className="flex-1 md:ml-64 p-4 md:p-8">
+     
+      <main className="flex-1  p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-4">

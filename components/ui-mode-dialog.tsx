@@ -22,7 +22,7 @@ export function UIModeDialog({ open, onOpenChange }: UIModeDialogProps) {
       return
     }
     onOpenChange(false)
-    router.push(`/dashboard/manual-entry/${mode}`)
+    router.push(`/product-portfolio/manual-entry/${mode}`)
   }
 
   return (

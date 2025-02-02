@@ -450,27 +450,46 @@
         "placeholder": "Classification",
         "all": "All Classifications"
       },
-      "location": {
-        "placeholder": "Location",
-        "all": "All Locations"
+      "users": {
+        "placeholder": "Select User",
+        "all": "All Users"
       },
       "year": {
-        "placeholder": "Year",
-        "all": "All Years",
-        "newest": "Newest",
-        "oldest": "Oldest"
+        "placeholder": "Reference Year",
+        "all": "All Years"
+      },
+      "status": {
+        "placeholder": "Status",
+        "all": "All Status",
+        "verified": "Verified",
+        "pending": "Pending"
       },
       "search": {
-        "placeholder": "Search by product name..."
+        "placeholder": "Search for EPDs"
       }
+    },
+    "comparison": {
+      "title": "Product Comparison",
+      "button": "Product comparison ({count}/3)",
+      "addMore": "Add more products",
+      "remove": "Remove product"
     },
     "card": {
       "verified": "Verified",
+      "pending": "Pending",
       "viewPDF": "View PDF",
-      "noPDF": "No PDF"
+      "industry": "Industry Solutions",
+      "country": "Country",
+      "id": "ID"
     },
     "loading": "Loading EPD data...",
-    "noResults": "No results found"
+    "noResults": {
+      "pending": "No pending EPDs available at the moment",
+      "filtered": "No results found for the selected filters"
+    },
+    "pagination": {
+      "showing": "Showing {start}-{end} of {total} items"
+    }
   },
   "productList": {
     "productPortfolio": "Product Portfolio",
@@ -505,6 +524,7 @@
       "total": "Total: {count} products",
       "previous": "Previous",
       "next": "Next"
-    }
+    },
+    "button":{"comparison":"Comparison"}
   }
 }

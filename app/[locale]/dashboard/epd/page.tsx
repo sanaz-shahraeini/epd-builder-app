@@ -100,7 +100,7 @@ const mockProducts: Product[] = [
 const PAGE_SIZE = 9;
 
 export default function EPDPage() {
-  const t = useTranslations()
+  const t = useTranslations('EPD');
   const { data: session } = useSession()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedClassification, setSelectedClassification] = useState<string>("all")
@@ -310,10 +310,10 @@ export default function EPDPage() {
                   onValueChange={(value) => handleFilterChange('classification', value)}
                 >
                   <SelectTrigger className="w-[180px] md:w-[200px] bg-white border border-gray-200">
-                    <SelectValue placeholder="Industry Solutions" />
+                    <SelectValue placeholder={t('filters.classification.placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Industry Solutions</SelectItem>
+                    <SelectItem value="all">{t('filters.classification.all')}</SelectItem>
                     {uniqueClassifications.map(classific => (
                       <SelectItem key={classific} value={classific}>{classific}</SelectItem>
                     ))}
@@ -326,10 +326,10 @@ export default function EPDPage() {
                   onValueChange={(value) => handleFilterChange('user', value)}
                 >
                   <SelectTrigger className="w-[180px] md:w-[200px] bg-white border">
-                    <SelectValue placeholder="Select User" />
+                    <SelectValue placeholder={t('filters.users.placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Users</SelectItem>
+                    <SelectItem value="all">{t('filters.users.all')}</SelectItem>
                     {users.map(user => (
                       <SelectItem key={user.id} value={user.id.toString()}>{user.username || user.email}</SelectItem>
                     ))}
@@ -342,10 +342,10 @@ export default function EPDPage() {
                   onValueChange={(value) => handleFilterChange('year', value)}
                 >
                   <SelectTrigger className="w-[180px] md:w-[200px] bg-white border border-gray-200">
-                    <SelectValue placeholder="Reference Year" />
+                    <SelectValue placeholder={t('filters.year.placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Years</SelectItem>
+                    <SelectItem value="all">{t('filters.year.all')}</SelectItem>
                     {uniqueYears.map(year => (
                       <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
                     ))}
@@ -358,12 +358,12 @@ export default function EPDPage() {
                   onValueChange={(value) => handleFilterChange('status', value)}
                 >
                   <SelectTrigger className="w-[180px] md:w-[200px] bg-white border border-gray-200">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t('filters.status.placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="verified">Verified</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="all">{t('filters.status.all')}</SelectItem>
+                    <SelectItem value="verified">{t('filters.status.verified')}</SelectItem>
+                    <SelectItem value="pending">{t('filters.status.pending')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -375,7 +375,7 @@ export default function EPDPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <Input
                   type="text"
-                  placeholder="Search for EPDs"
+                  placeholder={t('filters.search.placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 bg-white border border-gray-200"
@@ -386,7 +386,7 @@ export default function EPDPage() {
                 onClick={handleCompareClick}
                 disabled={selectedForComparison.length < 2}
               >
-                Product comparison ({selectedForComparison.length}/3)
+                {t('comparison.button', { count: selectedForComparison.length })}
               </Button>
             </div>
           </div>
@@ -412,8 +412,8 @@ export default function EPDPage() {
               <div className="col-span-full text-center py-12">
                 <p className="text-gray-500">
                   {selectedStatus === 'pending' 
-                    ? "No pending EPDs available at the moment" 
-                    : "No results found for the selected filters"}
+                    ? t('noResults.pending')
+                    : t('noResults.filtered')}
                 </p>
               </div>
             ) : (
@@ -466,19 +466,19 @@ export default function EPDPage() {
                     <ul className="space-y-2">
                       <li className="flex items-center gap-2 min-w-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
-                        <span className="text-xs text-gray-500 shrink-0">Industry Solutions</span>
+                        <span className="text-xs text-gray-500 shrink-0">{t('card.industry')}</span>
                         <span className="ml-auto truncate text-xs text-gray-900" title={item.classific} style={{ maxWidth: '150px' }}>
                           {item.classific}
                         </span>
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
-                        <span className="text-xs text-gray-500 shrink-0">Country</span>
+                        <span className="text-xs text-gray-500 shrink-0">{t('card.country')}</span>
                         <span className="ml-auto text-xs text-gray-900">{item.geo}</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
-                        <span className="text-xs text-gray-500 shrink-0">ID</span>
+                        <span className="text-xs text-gray-500 shrink-0">{t('card.id')}</span>
                         <span className="ml-auto px-2 py-0.5 rounded bg-[#E8F5E9] text-xs text-gray-900 font-mono">
                           {item.uuid.slice(0, 8)}
                         </span>
@@ -632,7 +632,11 @@ export default function EPDPage() {
           {/* Total Items Count */}
           {!loading && (
             <div className="text-center text-xs sm:text-sm text-gray-500 mt-2 px-2">
-              Showing {Math.min(totalItems, ((currentPage - 1) * PAGE_SIZE) + 1)}-{Math.min(currentPage * PAGE_SIZE, totalItems)} of {totalItems} items
+              {t('pagination.showing', {
+                start: Math.min(totalItems, ((currentPage - 1) * PAGE_SIZE) + 1),
+                end: Math.min(currentPage * PAGE_SIZE, totalItems),
+                total: totalItems
+              })}
             </div>
           )}
         </>
