@@ -8,7 +8,7 @@ export default function ProductListPage() {
     return <div>Loading...</div>;
   }
 
-  if (!session.data) {
+  if (!session || !session.data) {
     return <div>You need to be authenticated to view this page.</div>;
   }
 
