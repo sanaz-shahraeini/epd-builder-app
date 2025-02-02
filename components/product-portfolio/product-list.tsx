@@ -83,19 +83,19 @@ const safeParseResponse = async (response: Response) => {
 };
 
 export default function ProductListComponent() {
-  const { data: session } = useSession();
+  const session = useSession();
   const router = useRouter();
-  const t = useTranslations('productList')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedProducts] = useState('All products')
+  const t = useTranslations('productList');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedProducts] = useState('All products');
   const itemsPerPage = 10; // Fixed items per page
-  const [products, setProducts] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [totalCount, setTotalCount] = useState(0)
-  const [currentPage, setCurrentPage] = useState(1)
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const totalPages = Math.ceil(totalCount / itemsPerPage);
-  const [showForm, setShowForm] = useState(false)
+  const [showForm, setShowForm] = useState(false);
   const [view, setView] = useState<"grid" | "list">("list");
 
   const handleViewChange = (view: string) => {
@@ -116,7 +116,7 @@ export default function ProductListComponent() {
 
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${session?.accessToken}`,
+          'Authorization': `Bearer ${session?.data?.accessToken}`,
           'Content-Type': 'application/json',
         },
         redirect: 'follow',
@@ -161,7 +161,7 @@ export default function ProductListComponent() {
 
   // Effect to handle session check
   useEffect(() => {
-    if (!session?.user) {
+    if (!session?.data?.user) {
       console.log('No active session, redirecting to signin...');
       router.push('/signin');
       return;
@@ -170,12 +170,12 @@ export default function ProductListComponent() {
 
   // Effect to handle data fetching
   useEffect(() => {
-    if (session?.user) {
+    if (session?.data?.user) {
       // Reset to page 1 when changing items per page
       setCurrentPage(1);
       fetchProducts();
     }
-  }, [session?.user]);
+  }, [session?.data?.user]);
 
   const getVisiblePages = () => {
     const delta = 2;
