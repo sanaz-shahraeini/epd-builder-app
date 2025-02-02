@@ -466,56 +466,56 @@ export default function ProductForm() {
       {/* Dialog */}
       <Dialog open={showNextSteps} onOpenChange={setShowNextSteps}>
         <DialogContent 
-          className="sm:max-w-md fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-full max-w-md"
+          className="sm:max-w-lg w-auto fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999]"
         >
           <DialogHeader>
-            <DialogTitle className="text-center">{t('chooseYourLCA')}</DialogTitle>
+        <DialogTitle className="text-center">{t('chooseYourLCA')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 pt-4">
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 h-14"
-              onClick={() => handleNextStepClick('/fast-lca')}
-            >
-              <Zap className="h-5 w-5 text-teal-600" />
-              <div className="text-left">
-                <div className="font-semibold">{t('fastLCA')}</div>
-                <div className="text-sm text-gray-500">{t('quickAssessment')}</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 h-14"
-              onClick={() => handleNextStepClick('/intelligent-lca')}
-            >
-              <Brain className="h-5 w-5 text-teal-600" />
-              <div className="text-left">
-                <div className="font-semibold">{t('intelligentLCA')}</div>
-                <div className="text-sm text-gray-500">{t('aiPoweredAssessment')}</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 h-14"
-              onClick={() => handleNextStepClick('/product-portfolio/input-data')}
-            >
-              <FileCheck className="h-5 w-5 text-teal-600" />
-              <div className="text-left">
-                <div className="font-semibold">{t('epdBuilder')}</div>
-                <div className="text-sm text-gray-500">{t('manageEPD')}</div>
-              </div>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2 h-14"
-              onClick={() => handleNextStepClick('/optimizer-lca')}
-            >
-              <Settings className="h-5 w-5 text-teal-600" />
-              <div className="text-left">
-                <div className="font-semibold">{t('optimizerLCA')}</div>
-                <div className="text-sm text-gray-500">{t('optimizeEnvironmentalImpact')}</div>
-              </div>
-            </Button>
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2 h-14"
+          onClick={() => handleNextStepClick('/fast-lca')}
+        >
+          <Zap className="h-5 w-5 text-teal-600" />
+          <div className="text-left">
+            <div className="font-semibold">{t('fastLCA')}</div>
+            <div className="text-sm text-gray-500">{t('quickAssessment')}</div>
+          </div>
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2 h-14"
+          onClick={() => handleNextStepClick('/intelligent-lca')}
+        >
+          <Brain className="h-5 w-5 text-teal-600" />
+          <div className="text-left">
+            <div className="font-semibold">{t('intelligentLCA')}</div>
+            <div className="text-sm text-gray-500">{t('aiPoweredAssessment')}</div>
+          </div>
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2 h-14"
+          onClick={() => handleNextStepClick('/product-portfolio/input-data')}
+        >
+          <FileCheck className="h-5 w-5 text-teal-600" />
+          <div className="text-left">
+            <div className="font-semibold">{t('epdBuilder')}</div>
+            <div className="text-sm text-gray-500">{t('manageEPD')}</div>
+          </div>
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2 h-14"
+          onClick={() => handleNextStepClick('/optimizer-lca')}
+        >
+          <Settings className="h-5 w-5 text-teal-600" />
+          <div className="text-left">
+            <div className="font-semibold">{t('optimizerLCA')}</div>
+            <div className="text-sm text-gray-500">{t('optimizeEnvironmentalImpact')}</div>
+          </div>
+        </Button>
           </div>
         </DialogContent>
         {showNextSteps && (

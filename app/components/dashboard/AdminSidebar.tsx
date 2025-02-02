@@ -117,7 +117,7 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="flex items-center justify-center py-4 lg:py-8">
-                <p className="text-sm text-muted-foreground">{t("productList.status.noProducts")}</p>
+                <p className="text-sm text-muted-foreground">{t("productList.status.noUsers")}</p>
               </div>
             ) : (
               sortedUsers.map((user) => (
