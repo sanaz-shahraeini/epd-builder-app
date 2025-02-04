@@ -504,7 +504,9 @@
     },
     "actions": {
       "newProduct": "+ New Product",
-      "retry": "Retry"
+      "retry": "Retry",
+      "previousPage": "Previous Page",
+      "nextPage": "Next Page"
     },
     "columns": {
       "name": "Name",

@@ -482,7 +482,9 @@
     },
     "actions": {
       "newProduct": "+ Neues Produkt",
-      "retry": "Wiederholen"
+      "retry": "Wiederholen",
+      "previousPage": "Vorherige Seite",
+      "nextPage": "Nächste Seite"
     },
     "columns": {
       "name": "Name",

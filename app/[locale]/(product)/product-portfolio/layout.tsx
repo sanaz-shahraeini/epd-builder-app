@@ -55,7 +55,7 @@ export default function ProductPortfolioLayout({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-4  bg-white dark:bg-black d:w-[mcalc(100%-256px)] md:ml-64">
+      <div className="flex-1 p-2  bg-white dark:bg-black d:w-[mcalc(100%-256px)] md:ml-64">
         {children}
       </div>
     </div>
