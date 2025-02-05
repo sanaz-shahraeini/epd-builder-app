@@ -31,7 +31,7 @@ interface User extends UserProfile {
 const getNavigationItems = (t: (key: string) => string) => [
   {
     name: t("dashboard.portfolio"),
-    href: ROUTES.DASHBOARD_ROUTES.PORTFOLIO,
+    href: "/product-portfolio",
     icon: LayoutDashboard,
   },
   {
@@ -115,9 +115,9 @@ const Sidebar: React.FC<SidebarProps> = () => {
       <div className="px-4 mb-8">
         <Image
           src="/assets/images/ipsum-logo.svg"
-          alt="Ipsum"
+          alt="logo"
           width={120}
-          height={35}
+          height={55}
           priority
           className="w-auto h-auto"
         />
@@ -152,12 +152,9 @@ const Sidebar: React.FC<SidebarProps> = () => {
 
       <nav className="flex-1 px-3 overflow-y-auto">
         {navigation.map((item) => {
-          // Determine if the current page matches the navigation item
           const isActive = (() => {
-            // Exact match for routes
             const exactMatches = {
-              [ROUTES.DASHBOARD_ROUTES.PORTFOLIO]:
-                pathname === "/en/dashboard/portfolio",
+              "/product-portfolio": pathname === "/product-portfolio",
               [ROUTES.DASHBOARD_ROUTES.PROJECTS]:
                 pathname === "/en/dashboard/projects",
               [ROUTES.DASHBOARD_ROUTES.ADMIN]:
@@ -167,11 +164,8 @@ const Sidebar: React.FC<SidebarProps> = () => {
                 pathname === "/en/dashboard/requests",
             };
 
-            // Check for nested routes or partial matches
             const nestedMatches = {
-              [ROUTES.DASHBOARD_ROUTES.PORTFOLIO]: pathname.startsWith(
-                "/en/dashboard/portfolio"
-              ),
+              "/product-portfolio": pathname.startsWith("/product-portfolio"),
               [ROUTES.DASHBOARD_ROUTES.PROJECTS]: pathname.startsWith(
                 "/en/dashboard/projects"
               ),
@@ -186,7 +180,6 @@ const Sidebar: React.FC<SidebarProps> = () => {
               ),
             };
 
-            // Special handling for EPD and Inbox pages to highlight only Administrative
             if (
               pathname.startsWith("/en/dashboard/epd") ||
               pathname.startsWith("/en/dashboard/inbox")
@@ -194,7 +187,6 @@ const Sidebar: React.FC<SidebarProps> = () => {
               return item.href === ROUTES.DASHBOARD_ROUTES.ADMIN;
             }
 
-            // Prioritize exact matches, then nested matches
             return exactMatches[item.href] || nestedMatches[item.href] || false;
           })();
 

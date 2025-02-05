@@ -611,7 +611,7 @@ function SignInForm({
                   variant="outline"
                   className="w-full"
                   onClick={handleGoogleSignIn}
-                  disabled={loading}
+                  disabled={true}
                 >
                   <FaGoogle className="mr-2 h-4 w-4" />
                   {t("signInWithGoogle")}

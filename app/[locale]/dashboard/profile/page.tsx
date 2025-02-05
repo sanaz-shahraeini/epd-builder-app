@@ -17,8 +17,7 @@ import { useRouter } from '@/i18n/navigation'
 import { getUserProfile, updateUserProfile, type UserProfile, changePassword } from "@/lib/api/auth"
 import { useToast } from "@/components/ui/use-toast"
 import { useState, useEffect, useRef } from "react"
-import { ModeToggle } from "@/components/mode-toggle"
-import { LanguageSwitcher } from '@/components/language-switcher'
+
 import { signOut, useSession } from "next-auth/react"
 import { useUserStore } from '@/lib/store/user'
 import { useUsers } from "@/lib/context/UsersContext"

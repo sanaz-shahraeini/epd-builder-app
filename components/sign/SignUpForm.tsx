@@ -616,10 +616,11 @@ function SignUpForm({ open, onClose, setShowSignIn, setShowSignUp }: SignUpFormP
           <Button
             type="button"
             variant="outline"
-            className="w-full border-teal-600 hover:bg-teal-50 hover:text-teal-600"
+            className="w-full"
             onClick={() => signIn("google")}
+            disabled={true}
           >
-            <FaGoogle className="mr-2 h-4 w-4 text-teal-600" />
+            <FaGoogle className="mr-2 h-4 w-4 text-align-middle"  />
             Google
           </Button>
 

@@ -234,13 +234,11 @@
       "myProfile": "My Profile"
     },
     "dashboard": {
-      "portfolio": "Product Portfolio",
-      "projects": "Project Management",
-      "admin": "Administrative",
-      "epd": "EPD Preview",
-      "requests": "Requests",
-      "profile": "Profile",
-      "inbox": "Inbox"
+      "portfolio": "Portfolio",
+      "projects": "Projects",
+      "admin": "Admin",
+      "epd": "EPD",
+      "requests": "Requests"
     },
     "userName": "User Name",
     "companyName": "Company Name",
@@ -252,7 +250,7 @@
     "profile": "Profile",
     "settings": "Settings",
     "signOut": "Sign Out",
-    "logout": "Log Out",
+    "logout": "Logout",
     "myEPDs": "My EPDs",
     "inbox": "Inbox",
     "dataDirectory": "Data Directory",
@@ -502,8 +500,8 @@
       "allProducts": "All products",
       "myProducts": "My products"
     },
+    "newProduct": "New Product",
     "actions": {
-      "newProduct": "+ New Product",
       "retry": "Retry",
       "previousPage": "Previous Page",
       "nextPage": "Next Page"
@@ -527,6 +525,27 @@
       "previous": "Previous",
       "next": "Next"
     },
-    "button":{"comparison":"Comparison"}
+    "button": { "comparison": "Comparison" }
+  },
+  "dashboard": {
+    "portfolio": "Portfolio",
+    "projects": "Projects",
+    "admin": "Admin",
+    "epd": "EPD",
+    "requests": {
+      "title": "Requests",
+      "columns": {
+        "title": "Title",
+        "status": "Status",
+        "date": "Date",
+        "requester": "Requester",
+        "type": "Type"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      }
+    }
   }
 }

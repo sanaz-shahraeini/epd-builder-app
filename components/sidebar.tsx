@@ -161,11 +161,12 @@ function SidebarContent({ isMobile, onMobileClose }: { isMobile?: boolean; onMob
       {/* Logo */}
       <div className={`${isMobile ? 'p-6' : 'p-6'}`}>
         <Image
-          src="/assets/images/logo.png" 
-          alt="TerraNEXT" 
-          className="h-8" 
-          width={isMobile ? 80 : 100}      
-          height={isMobile ? 40 : 50} 
+          src="/assets/images/ipsum-logo.svg" 
+          alt="Ipsum"
+          width={120}
+          height={35}
+          priority
+          className="w-auto h-auto"
         />
       </div>
 

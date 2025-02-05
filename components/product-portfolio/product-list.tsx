@@ -240,7 +240,16 @@ export default function ProductListComponent() {
   }, [fetchProducts, session?.accessToken]);
 
   // Optimize filtered products
-  const filteredProducts = useMemo(() => products, [products]);
+  const filteredProducts = useMemo(() => {
+    const trimmedSearch = searchTerm.trim().toLowerCase();
+    if (!trimmedSearch) return products;
+    
+    // Always match from the start of product name
+    // using the exact number of characters typed
+    return products.filter((product) =>
+      product.product_name.toLowerCase().startsWith(trimmedSearch)
+    );
+  }, [products, searchTerm]);
 
   const getVisiblePages = useCallback(() => {
     const delta = 2;
@@ -314,6 +323,7 @@ export default function ProductListComponent() {
               <div className="flex justify-end">
                 <div className="flex items-center bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 p-0.5">
                   <button
+                    type="button"
                     onClick={() => handleViewChange("list")}
                     className={`px-3 py-1.5 rounded-md transition-colors ${
                       view === "list"
@@ -324,6 +334,7 @@ export default function ProductListComponent() {
                     List
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleViewChange("grid")}
                     className={`px-3 py-1.5 rounded-md transition-colors ${
                       view === "grid"
@@ -338,8 +349,7 @@ export default function ProductListComponent() {
             </div>
 
             <div className="flex flex-col md:flex-row justify-end items-start md:items-center gap-4">
-              <Select.Root value={selectedProducts}>
-                <Select.Trigger className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-[#A5D3D1]/20 dark:hover:bg-[#1B4242]/20 min-w-[160px]" />
+              <Select.Root>
                 <Select.Content>
                   <Select.Item value="All products">
                     {t("filter.allProducts")}
@@ -349,12 +359,13 @@ export default function ProductListComponent() {
                   </Select.Item>
                 </Select.Content>
               </Select.Root>
-              <Button
+              <button
+                type="button"
                 onClick={() => setShowForm(true)}
-                className="bg-[#42B7B0] text-white hover:bg-[#2C5C5C] dark:bg-[#1B4242] dark:hover:bg-[#2C5C5C] px-3 py-2 md:px-4 md:py-3 rounded-lg transition-colors"
+                className="bg-teal-600 hover:bg-teal-700 text-white text-sm lg:text-base dark:bg-[#3AA19B] dark:hover:bg-[#42B7B0] px-3 py-2 md:px-4 md:py-2 rounded-md transition-colors duration-200 ease-in-out"
               >
-                {t("actions.newProduct")}
-              </Button>
+                {t("newProduct")}
+              </button>
             </div>
           </div>
 
@@ -396,6 +407,7 @@ export default function ProductListComponent() {
           {totalPages > 1 && (
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
               <button
+                type="button"
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 className="p-2 md:w-10 md:h-10 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -419,6 +431,7 @@ export default function ProductListComponent() {
               {getVisiblePages().map((page, index) =>
                 typeof page === "number" ? (
                   <button
+                    type="button"
                     key={index}
                     onClick={() => setCurrentPage(page)}
                     className={`p-2 md:w-10 md:h-10 rounded-lg border ${

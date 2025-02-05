@@ -288,13 +288,11 @@
       "myProfile": "Mein Profil"
     },
     "dashboard": {
-      "portfolio": "Produktportfolio",
-      "projects": "Projektverwaltung",
-      "admin": "Administration",
-      "epd": "EPD Vorschau",
-      "requests": "Anfragen",
-      "profile": "Profil",
-      "inbox": "Posteingang"
+      "portfolio": "Portfolio",
+      "projects": "Projekte",
+      "admin": "Admin",
+      "epd": "EPD",
+      "requests": "Anfragen"
     },
     "userName": "Benutzername",
     "companyName": "Firmenname",
@@ -506,5 +504,26 @@
       "next": "Weiter"
     },
     "productPortfolio": "Produktportfolio"
+  },
+  "dashboard": {
+    "portfolio": "Portfolio",
+    "projects": "Projekte",
+    "admin": "Admin",
+    "epd": "EPD Suche",
+    "requests": {
+      "title": "Anfragen",
+      "columns": {
+        "title": "Titel",
+        "status": "Status",
+        "date": "Datum",
+        "requester": "Anforderer",
+        "type": "Typ"
+      },
+      "status": {
+        "pending": "Ausstehend",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt"
+      }
+    }
   }
 }
