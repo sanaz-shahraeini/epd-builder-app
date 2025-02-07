@@ -1,166 +1,184 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import { Search, Info, Plus, ChevronDown } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { useRouter } from 'next/navigation';
+"use client";
+import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Card } from "@radix-ui/themes";
+import { useTranslations } from "next-intl";
+import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
 
 interface Product {
-  category_name: string
-  industry_solution: string
-  product_name: string
-  description: string
-  image_url: string
-  pdf_url: string
-  geo: string
-  company_name: string
-  item_no: string
-  created_at: string
+  id: number;
+  product_name: string;
+  description: string;
+  industry_solution: string;
+  epd_verification_year: number;
+  geo: string;
+  category_name: string;
+  image_url: string;
 }
 
-interface ApiResponse {
-  count: number
-  next: string | null
-  previous: string | null
-  results: Product[]
-}
+const ProductCard = ({ product }: { product: Product }) => {
+  const t = useTranslations("productList");
+  const [imageError, setImageError] = useState(false);
+
+  return (
+    <Card className="p-4 hover:shadow-lg transition-shadow duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+      <div className="space-y-4">
+        <div className="aspect-video relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+          <Image
+            src={!imageError ? (product.image_url || "/placeholder.jpg") : "/placeholder.jpg"}
+            alt={product.product_name}
+            fill
+            className="object-cover"
+            onError={() => setImageError(true)}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        </div>
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+            {product.product_name}
+          </h3>
+          <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+            {product.description}
+          </p>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span className="text-gray-500 dark:text-gray-400">{t("columns.industrySolution")}:</span>
+              <p className="text-gray-900 dark:text-white">{product.industry_solution}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 dark:text-gray-400">{t("columns.category")}:</span>
+              <p className="text-gray-900 dark:text-white">{product.category_name}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 dark:text-gray-400">{t("columns.verificationYear")}:</span>
+              <p className="text-gray-900 dark:text-white">{product.epd_verification_year || "N/A"}</p>
+            </div>
+            <div>
+              <span className="text-gray-500 dark:text-gray-400">{t("columns.country")}:</span>
+              <p className="text-gray-900 dark:text-white">{product.geo || "-"}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+const SkeletonCard = () => (
+  <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+    <div className="space-y-4">
+      <Skeleton className="aspect-video w-full rounded-lg" />
+      <div className="space-y-3">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-12 w-full" />
+        <div className="grid grid-cols-2 gap-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 export default function ProductPortfolio() {
-  const [view, setView] = useState<"grid" | "list">("grid")
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { data: session } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     const fetchProducts = async () => {
+      if (!session?.accessToken) return;
+
       try {
-        const response = await fetch("https://epd-fullstack-project.vercel.app/api/products/", {
-          method: "GET",
+        setIsLoading(true);
+        setError(null);
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/products`, {
           headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+            "Content-Type": "application/json",
             Accept: "application/json",
           },
-        })
+        });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
+          if (response.status === 401) {
+            router.push("/signin");
+            return;
+          }
+          
+          // Try to get error message from response
+          let errorMessage;
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await response.json();
+            errorMessage = errorData.message || `API Error (${response.status})`;
+          } else {
+            const text = await response.text();
+            console.error("Non-JSON response:", text);
+            errorMessage = `API Error (${response.status})`;
+          }
+          throw new Error(errorMessage);
         }
 
-        const data: ApiResponse = await response.json()
-        setProducts(data.results)
-        setLoading(false)
-      } catch (err) {
-        console.error("Fetch error:", err)
-        setError(`Error fetching products: ${err instanceof Error ? err.message : String(err)}`)
-        setLoading(false)
+        // Verify we have JSON response
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("API did not return JSON");
+        }
+
+        const data = await response.json();
+        if (!data || !Array.isArray(data.results)) {
+          throw new Error("Invalid data format received from API");
+        }
+
+        setProducts(data.results);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        setError(
+          error instanceof Error 
+            ? error.message 
+            : "Failed to fetch products"
+        );
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchProducts()
-  }, [])
+    fetchProducts();
+  }, [session?.accessToken, router]);
 
-  const handleViewChange = (view: string) => {
-    if (view === 'Grid') {
-      router.push('/product-portfolio/product-grid');
-    } else if (view === 'List') {
-      router.push('/product-portfolio/product-list');
-    }
-  };
-
-  if (loading) return <div className="text-center p-8">Loading...</div>
-  if (error) return <div className="text-center p-8 text-red-500">{error}</div>
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-500 dark:text-red-400">
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* <div className="mb-8"> */}
-        {/* <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-semibold">Product portfolio</h1>
-
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input placeholder="Search here" className="pl-10 w-[300px]" />
-            </div>
-
-            {/* <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  Grid <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleViewChange("grid")}>Grid</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleViewChange("list")}>List</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu> */}
-          {/* </div>
-        </div> */}
-
-        {/* <div className="flex justify-between items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
-                All products <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem>All products</DropdownMenuItem>
-              <DropdownMenuItem>My products</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu> */}
-{/* 
-          <Button className="gap-2 bg-green-600 hover:bg-green-700">
-            <Plus className="h-4 w-4" /> New Product
-          </Button>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+      {isLoading
+        ? Array.from({ length: 6 }, (_, index) => (
+            <SkeletonCard key={`skeleton-${index}`} />
+          ))
+        : products.map((product) => (
+            <ProductCard 
+              key={`product-${product.id || product.product_name}`} 
+              product={product} 
+            />
+          ))}
+      {!isLoading && products.length === 0 && (
+        <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
+          No products found
         </div>
-      </div>  */}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <div key={product.item_no} className="border rounded-lg p-4 space-y-4">
-            <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
-              <img
-                src={product.image_url || "/placeholder.svg"}
-                alt={product.product_name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-medium">{product.product_name}</h3>
-                  <Info className="h-4 w-4 text-gray-400" />
-                </div>
-                <span className="text-sm text-gray-500">{new Date(product.created_at).getFullYear()}</span>
-              </div>
-
-              <div className="space-y-1 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-gray-200" />
-                  <span className="text-gray-600">Industry Solutions</span>
-                  <span>{product.industry_solution}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-gray-200" />
-                  <span className="text-gray-600">Country</span>
-                  <span>{product.geo}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-gray-200" />
-                  <span className="text-gray-600">ID</span>
-                  <span className="bg-yellow-100 px-2 py-0.5 rounded">{product.item_no}</span>
-                </div>
-              </div>
-
-              <p className="text-sm text-gray-500 line-clamp-2">{product.description}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      )}
     </div>
-  )
+  );
 }
-

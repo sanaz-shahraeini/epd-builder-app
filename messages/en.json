@@ -448,6 +448,10 @@
         "placeholder": "Classification",
         "all": "All Classifications"
       },
+      "industry": {
+        "placeholder": "Industry Solution",
+        "all": "All Industry Solutions"
+      },
       "users": {
         "placeholder": "Select User",
         "all": "All Users"

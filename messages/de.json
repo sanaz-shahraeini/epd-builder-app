@@ -427,6 +427,10 @@
         "placeholder": "Klassifikation",
         "all": "Alle Klassifikationen"
       },
+      "industry": {
+        "placeholder": "Industrielösung",
+        "all": "Alle Industrielösungen"
+      },
       "users": {
         "placeholder": "Benutzer auswählen",
         "all": "Alle Benutzer"

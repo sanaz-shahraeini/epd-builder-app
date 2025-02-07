@@ -103,9 +103,10 @@ export default function EPDPage() {
   const t = useTranslations('EPD');
   const { data: session } = useSession()
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedClassification, setSelectedClassification] = useState<string>("all")
+  const [selectedIndustry, setSelectedIndustry] = useState<string>('');
+  const [selectedClassification, setSelectedClassification] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<string>("all")
-  const [selectedYear, setSelectedYear] = useState<string>("all")
+  const [selectedYear, setSelectedYear] = useState<string>("")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const user = useUserStore((state) => state.user)
   const { users } = useUsers()
@@ -114,134 +115,142 @@ export default function EPDPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+  const [allProducts, setAllProducts] = useState<IbuData[]>([]);
 
-  // Debounce search query to avoid too many API calls
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  // State for unique values
+  const [uniqueClassifications, setUniqueClassifications] = useState<string[]>([]);
+  const [uniqueYears, setUniqueYears] = useState<number[]>([]);
+  const [industrySolutions, setIndustrySolutions] = useState<string[]>([]);
+  const [classifications, setClassifications] = useState<string[]>([]);
 
-  const fetchIbuData = async () => {
-    try {
-      setLoading(true);
-      let queryParams = new URLSearchParams();
-      
-      // Add pagination
-      queryParams.append('page', currentPage.toString());
-      queryParams.append('page_size', PAGE_SIZE.toString());
-      
-      // Add filters to query parameters
-      if (searchQuery) {
-        queryParams.append('search', searchQuery);
-      }
-      
-      if (selectedClassification && selectedClassification !== 'all') {
-        queryParams.append('classific', selectedClassification);
-      }
-      
-      if (selectedUser && selectedUser !== 'all') {
-        queryParams.append('owner', selectedUser);
-      }
-      
-      if (selectedYear && selectedYear !== 'all') {
-        queryParams.append('year', selectedYear);
-      }
-      
-      // Don't add status filter since all are verified in current API
-      
-      const response = await fetch(
-        buildApiUrl(`${API_ROUTES.PRODUCTS.IBU_DATA}/?${queryParams.toString()}`)
-      );
-      const data = await response.json();
-      
-      // Handle status filtering only (since API doesn't support it yet)
-      let results = data.results;
-      let totalCount = data.count;
-      
-      if (selectedStatus === 'pending') {
-        results = [];
-        totalCount = 0;
-      }
-      
-      setIbuData(results);
-      setTotalItems(totalCount);
-      setTotalPages(Math.ceil(totalCount / PAGE_SIZE));
-      
-      // If current page is beyond total pages, reset to page 1
-      if (currentPage > Math.ceil(totalCount / PAGE_SIZE)) {
-        setCurrentPage(1);
-      }
-    } catch (error) {
-      console.error('Error fetching IBU data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Get unique values for select boxes from the unfiltered data
+  // Get unique values for select boxes
   const getUniqueValues = async () => {
     try {
       const response = await fetch(
-        buildApiUrl(`${API_ROUTES.PRODUCTS.IBU_DATA}/?page_size=1000`)
+        buildApiUrl(`${API_ROUTES.PRODUCTS.IBU_DATA}/`)
       );
       const data = await response.json();
       
-      // Fix the classifications array type handling
+      // Get unique classifications
       const classificationSet = new Set(data.results.map((item: IbuData) => item.classific));
       const classifications = Array.from(classificationSet)
         .filter(Boolean)
         .sort() as string[];
-        
       setUniqueClassifications(classifications);
 
-      // Fix the years array type handling
+      // Get unique years
       const yearsSet = new Set(
         data.results.map((item: IbuData) => parseInt(item.ref_year))
       );
       const years = Array.from(yearsSet)
         .filter((year): year is number => typeof year === 'number' && !isNaN(year))
         .sort((a, b) => b - a);
-        
       setUniqueYears(years);
     } catch (error) {
       console.error('Error fetching unique values:', error);
+      setUniqueClassifications([]);
+      setUniqueYears([]);
     }
   };
 
-  // State for unique values
-  const [uniqueClassifications, setUniqueClassifications] = useState<string[]>([]);
-  const [uniqueYears, setUniqueYears] = useState<number[]>([]);
+  // Fetch industry solutions and classifications
+  const fetchFilterOptions = async () => {
+    try {
+      const url = buildApiUrl('/api/ibudata');
+      console.log('Fetching filter options from:', url);
+      
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${session?.accessToken}`,
+        },
+      });
 
-  // Fetch unique values on component mount
-  useEffect(() => {
-    getUniqueValues();
-  }, []);
+      if (!response.ok) {
+        console.error('Filter options response not OK:', response.status, response.statusText);
+        throw new Error('Failed to fetch filter options');
+      }
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    } else {
-      fetchIbuData();
+      const data = await response.json();
+      console.log('Received filter options:', data);
+      
+      // Extract unique values from the results
+      const industries = new Set<string>();
+      const classificationSet = new Set<string>();
+      const yearsSet = new Set<string>();
+
+      data.results.forEach((item: any) => {
+        if (item.industry_solution) industries.add(item.industry_solution);
+        if (item.classific) classificationSet.add(item.classific);
+        if (item.ref_year) yearsSet.add(item.ref_year);
+      });
+
+      setIndustrySolutions(Array.from(industries).sort());
+      setClassifications(Array.from(classificationSet).sort());
+      setUniqueYears(Array.from(yearsSet).map(year => parseInt(year)).sort((a, b) => b - a));
+    } catch (error) {
+      console.error('Error fetching filter options:', error);
+      setIndustrySolutions([]);
+      setClassifications([]);
+      setUniqueYears([]);
     }
-  }, [selectedClassification, selectedUser, selectedYear, selectedStatus, debouncedSearchQuery]);
+  };
 
-  // Fetch data when page changes
-  useEffect(() => {
-    fetchIbuData();
-  }, [currentPage]);
+  // Update classifications when industry solution changes
+  const updateClassifications = async (industry: string) => {
+    try {
+      const queryParams = new URLSearchParams();
+      if (industry && industry !== 'all') {
+        queryParams.append('industry_solution', industry);
+      }
 
-  const handleFilterChange = (
-    filterType: 'classification' | 'user' | 'year' | 'status',
-    value: string
-  ) => {
-    // Update the corresponding filter
+      const url = buildApiUrl(`/api/ibudata?${queryParams}`);
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${session?.accessToken}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch classifications');
+
+      const data = await response.json();
+      const classificationSet = new Set<string>();
+      
+      data.results.forEach((item: any) => {
+        if (item.classific) classificationSet.add(item.classific);
+      });
+
+      setClassifications(Array.from(classificationSet).sort());
+      // Reset classification selection when industry changes
+      setSelectedClassification('');
+    } catch (error) {
+      console.error('Error fetching classifications:', error);
+      setClassifications([]);
+      setSelectedClassification('');
+    }
+  };
+
+  // Handle industry solution change
+  const handleIndustryChange = (value: string) => {
+    setSelectedIndustry(value === 'all' ? '' : value);
+    updateClassifications(value);
+    // Reset to first page when industry changes
+    setCurrentPage(1);
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (filterType: string, value: string) => {
+    // Reset to first page when any filter changes
+    setCurrentPage(1);
+
     switch (filterType) {
       case 'classification':
         setSelectedClassification(value);
         break;
-      case 'user':
-        setSelectedUser(value);
-        break;
       case 'year':
         setSelectedYear(value);
+        break;
+      case 'user':
+        setSelectedUser(value);
         break;
       case 'status':
         setSelectedStatus(value);
@@ -249,9 +258,112 @@ export default function EPDPage() {
     }
   };
 
+  // Handle search input with debounce
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    // Reset to first page when search changes
+    setCurrentPage(1);
+  };
+
+  // Debounce search query to avoid too many API calls
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
+  // Fetch data when page or filters change
+  useEffect(() => {
+    if (session?.accessToken) {
+      console.log('Filters changed, fetching new data with:', {
+        search: debouncedSearchQuery,
+        year: selectedYear,
+        industry: selectedIndustry,
+        classification: selectedClassification,
+        status: selectedStatus,
+        user: selectedUser,
+        page: currentPage
+      });
+      fetchIbuData();
+    }
+  }, [debouncedSearchQuery, selectedYear, selectedIndustry, selectedClassification, selectedStatus, selectedUser, currentPage]);
+
+  // Effect to fetch initial data
+  useEffect(() => {
+    if (session?.accessToken) {
+      console.log('Session available, fetching initial data');
+      fetchFilterOptions();
+      fetchIbuData();
+    }
+  }, [session?.accessToken]);
+
+  const fetchIbuData = async () => {
+    setLoading(true);
+    try {
+      // If status is pending, return empty results since all items are verified
+      if (selectedStatus === 'pending') {
+        setIbuData([]);
+        setTotalItems(0);
+        setTotalPages(1);
+        setLoading(false);
+        return;
+      }
+
+      const queryParams = new URLSearchParams();
+      
+      // Add search and filters
+      if (searchQuery) queryParams.append('search', searchQuery);
+      if (selectedYear) queryParams.append('ref_year', selectedYear);
+      if (selectedIndustry && selectedIndustry !== 'all') queryParams.append('industry_solution', selectedIndustry);
+      if (selectedClassification && selectedClassification !== 'all') queryParams.append('classific', selectedClassification);
+      // Only add status filter if it's verified, since all items are verified
+      if (selectedStatus === 'verified') queryParams.append('status', selectedStatus);
+      if (selectedUser && selectedUser !== 'all') queryParams.append('user', selectedUser);
+      
+      // Add pagination
+      queryParams.append('page', currentPage.toString());
+      queryParams.append('page_size', PAGE_SIZE.toString());
+
+      const url = buildApiUrl(`/api/ibudata/?${queryParams}`);
+      console.log('Fetching IBU data from:', url);
+      console.log('With filters:', {
+        search: searchQuery,
+        year: selectedYear,
+        industry: selectedIndustry,
+        classification: selectedClassification,
+        status: selectedStatus,
+        user: selectedUser,
+        page: currentPage,
+        pageSize: PAGE_SIZE
+      });
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${session?.accessToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('IBU data response not OK:', response.status, response.statusText);
+        throw new Error('Failed to fetch data');
+      }
+
+      const data = await response.json();
+      console.log('Received IBU data:', data);
+      
+      setIbuData(data.results || []);
+      setTotalItems(data.count || 0);
+      setTotalPages(Math.ceil((data.count || 0) / PAGE_SIZE));
+    } catch (error) {
+      console.error('Error fetching IBU data:', error);
+      setIbuData([]);
+      setTotalItems(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -286,6 +398,20 @@ export default function EPDPage() {
     setIsComparing(false)
   }
 
+  // Add state for page input
+  const [pageInput, setPageInput] = useState<string>('');
+
+  // Add handler for direct page navigation
+  const handleDirectPageChange = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const page = parseInt(pageInput);
+      if (!isNaN(page) && page >= 1 && page <= totalPages) {
+        handlePageChange(page);
+      }
+      setPageInput('');
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 mb-4">
       {isComparing ? (
@@ -303,29 +429,29 @@ export default function EPDPage() {
           <div className="flex flex-col gap-4">
             {/* Filters Row - Now scrollable on mobile */}
             <ScrollArea className="w-full pb-4">
-              <div className="flex items-center gap-4 min-w-max">
-                {/* Projects/Classifications Select */}
+              <div className="flex flex-nowrap gap-2 md:gap-4 min-w-max px-2">
+                {/* Classification Select */}
                 <Select
                   value={selectedClassification}
                   onValueChange={(value) => handleFilterChange('classification', value)}
                 >
-                  <SelectTrigger className="w-[180px] md:w-[200px] bg-white border border-gray-200">
+                  <SelectTrigger className="w-[140px] sm:w-[160px] md:w-[200px] bg-white border border-gray-200 text-sm">
                     <SelectValue placeholder={t('filters.classification.placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('filters.classification.all')}</SelectItem>
-                    {uniqueClassifications.map(classific => (
-                      <SelectItem key={classific} value={classific}>{classific}</SelectItem>
+                    {classifications.map(classification => (
+                      <SelectItem key={classification} value={classification}>{classification}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
                 {/* Users Select */}
                 <Select
-                  value={selectedUser}
+                  value={selectedUser || 'all'}
                   onValueChange={(value) => handleFilterChange('user', value)}
                 >
-                  <SelectTrigger className="w-[180px] md:w-[200px] bg-white border">
+                  <SelectTrigger className="w-[140px] sm:w-[160px] md:w-[200px] bg-white border border-gray-200 text-sm">
                     <SelectValue placeholder={t('filters.users.placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -336,16 +462,15 @@ export default function EPDPage() {
                   </SelectContent>
                 </Select>
 
-                {/* Dates Select */}
+                {/* Year Select */}
                 <Select
-                  value={selectedYear}
+                  value={selectedYear || ''}
                   onValueChange={(value) => handleFilterChange('year', value)}
                 >
-                  <SelectTrigger className="w-[180px] md:w-[200px] bg-white border border-gray-200">
+                  <SelectTrigger className="w-[140px] sm:w-[160px] md:w-[200px] bg-white border border-gray-200 text-sm">
                     <SelectValue placeholder={t('filters.year.placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('filters.year.all')}</SelectItem>
                     {uniqueYears.map(year => (
                       <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
                     ))}
@@ -357,27 +482,27 @@ export default function EPDPage() {
                   value={selectedStatus}
                   onValueChange={(value) => handleFilterChange('status', value)}
                 >
-                  <SelectTrigger className="w-[180px] md:w-[200px] bg-white border border-gray-200">
+                  <SelectTrigger className="w-[140px] sm:w-[160px] md:w-[200px] bg-white border border-gray-200 text-sm">
                     <SelectValue placeholder={t('filters.status.placeholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('filters.status.all')}</SelectItem>
-                    <SelectItem value="verified">{t('filters.status.verified')}</SelectItem>
-                    <SelectItem value="pending">{t('filters.status.pending')}</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </ScrollArea>
 
             {/* Search and Compare Row - Stack on mobile */}
-            <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
+            <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center px-2">
               <div className="relative w-full sm:w-[300px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <Input
                   type="text"
                   placeholder={t('filters.search.placeholder')}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchChange}
                   className="pl-10 bg-white border border-gray-200"
                 />
               </div>
@@ -449,7 +574,7 @@ export default function EPDPage() {
                         <h3 className="text-sm font-medium truncate" title={item.name} style={{ maxWidth: '200px' }}>
                           {item.name}
                         </h3>
-                        <button className="text-gray-400 hover:text-gray-600 shrink-0">
+                        <button className="text-gray-400 hover:text-gray-600">
                           <Info size={14} />
                         </button>
                       </div>
@@ -464,23 +589,23 @@ export default function EPDPage() {
 
                     {/* Details List */}
                     <ul className="space-y-2">
-                      <li className="flex items-center gap-2 min-w-0">
+                      <li key="industry" className="flex items-center gap-2 min-w-0">
                         <span className="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
                         <span className="text-xs text-gray-500 shrink-0">{t('card.industry')}</span>
                         <span className="ml-auto truncate text-xs text-gray-900" title={item.classific} style={{ maxWidth: '150px' }}>
                           {item.classific}
                         </span>
                       </li>
-                      <li className="flex items-center gap-2">
+                      <li key="country" className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
                         <span className="text-xs text-gray-500 shrink-0">{t('card.country')}</span>
                         <span className="ml-auto text-xs text-gray-900">{item.geo}</span>
                       </li>
-                      <li className="flex items-center gap-2">
+                      <li key="id" className="flex items-center gap-2">
                         <span className="w-1.5 h-1.5 rounded-full bg-gray-400 shrink-0"></span>
                         <span className="text-xs text-gray-500 shrink-0">{t('card.id')}</span>
                         <span className="ml-auto px-2 py-0.5 rounded bg-[#E8F5E9] text-xs text-gray-900 font-mono">
-                          {item.uuid.slice(0, 8)}
+                          {item.uuid ? item.uuid.slice(0, 8) : item.node_id?.slice(0, 8) || '-'}
                         </span>
                       </li>
                     </ul>
@@ -507,75 +632,83 @@ export default function EPDPage() {
             )}
           </div>
 
-          {/* Pagination - Adjust for mobile */}
-          {totalPages > 0 && (
-            <div className="flex justify-center items-center gap-1 mt-8 px-2 max-w-full overflow-x-auto">
-              {/* Previous button */}
+          {/* Modern Minimalist Pagination */}
+          <div className="mt-8 flex flex-col items-center justify-center gap-4">
+            {/* Results info */}
+            <div className="text-sm text-gray-600">
+              Showing {((currentPage - 1) * PAGE_SIZE) + 1} to {Math.min(currentPage * PAGE_SIZE, totalItems)} of {totalItems} results
+            </div>
+
+            {/* Pagination controls */}
+            <div className="flex items-center gap-2">
+              {/* First page */}
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className="h-10 w-10 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="First page"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+              </button>
+
+              {/* Previous page */}
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="p-2 rounded-lg hover:bg-teal-50 text-teal-500 disabled:opacity-50 disabled:pointer-events-none"
-                aria-label="Previous page"
+                className="h-10 w-10 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Previous page"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m15 18-6-6 6-6"/>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
               {/* Page numbers */}
               <div className="flex items-center gap-1">
                 {(() => {
-                  let pages = [];
-                  const maxVisible = 7;
-                  const halfVisible = Math.floor(maxVisible / 2);
+                  const pages = [];
+                  const maxVisible = 3; // Show only 3 pages for minimalist design
                   
-                  // Calculate range
-                  let startPage = Math.max(1, currentPage - halfVisible);
+                  let startPage = Math.max(1, currentPage - 1);
                   let endPage = Math.min(totalPages, startPage + maxVisible - 1);
                   
-                  // Adjust if at the end
+                  // Adjust start if we're near the end
                   if (endPage - startPage + 1 < maxVisible) {
                     startPage = Math.max(1, endPage - maxVisible + 1);
                   }
                   
-                  // Always show first page
+                  // First page if not in range
                   if (startPage > 1) {
                     pages.push(
                       <button
-                        key={1}
+                        key="1"
                         onClick={() => handlePageChange(1)}
-                        className="w-10 h-10 rounded-lg hover:bg-teal-50 text-teal-500 flex items-center justify-center"
+                        className="h-10 w-10 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                       >
                         1
                       </button>
                     );
                     if (startPage > 2) {
                       pages.push(
-                        <span key="dots1" className="px-2 text-gray-400">...</span>
+                        <span key="dots1" className="h-10 w-10 flex items-center justify-center text-gray-400">
+                          ...
+                        </span>
                       );
                     }
                   }
                   
-                  // Add visible pages
+                  // Visible pages
                   for (let i = startPage; i <= endPage; i++) {
                     pages.push(
                       <button
                         key={i}
                         onClick={() => handlePageChange(i)}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          currentPage === i 
-                            ? 'bg-teal-500 text-white' 
-                            : 'hover:bg-teal-50 text-teal-500'
+                        className={`h-10 w-10 rounded-full flex items-center justify-center transition-colors ${
+                          currentPage === i
+                            ? 'bg-teal-500 text-white hover:bg-teal-600'
+                            : 'text-gray-600 hover:bg-gray-100'
                         }`}
                       >
                         {i}
@@ -583,18 +716,20 @@ export default function EPDPage() {
                     );
                   }
                   
-                  // Always show last page
+                  // Last page if not in range
                   if (endPage < totalPages) {
                     if (endPage < totalPages - 1) {
                       pages.push(
-                        <span key="dots2" className="px-2 text-gray-400">...</span>
+                        <span key="dots2" className="h-10 w-10 flex items-center justify-center text-gray-400">
+                          ...
+                        </span>
                       );
                     }
                     pages.push(
                       <button
                         key={totalPages}
                         onClick={() => handlePageChange(totalPages)}
-                        className="w-10 h-10 rounded-lg hover:bg-teal-50 text-teal-500 flex items-center justify-center"
+                        className="h-10 w-10 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                       >
                         {totalPages}
                       </button>
@@ -605,29 +740,59 @@ export default function EPDPage() {
                 })()}
               </div>
 
-              {/* Next button */}
+              {/* Next page */}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-lg hover:bg-teal-50 text-teal-500 disabled:opacity-50 disabled:pointer-events-none"
-                aria-label="Next page"
+                className="h-10 w-10 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Next page"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m9 6 6 6-6 6"/>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Last page */}
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+                className="h-10 w-10 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Last page"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                 </svg>
               </button>
             </div>
-          )}
+
+            {/* Jump to page - Only show for many pages */}
+            {totalPages > 5 && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max={totalPages}
+                  value={pageInput}
+                  onChange={(e) => setPageInput(e.target.value)}
+                  onKeyDown={handleDirectPageChange}
+                  className="w-16 h-10 rounded-lg border-gray-200 text-center text-sm focus:border-teal-500 focus:ring-teal-500"
+                  placeholder="Page"
+                />
+                <button
+                  onClick={() => {
+                    const page = parseInt(pageInput);
+                    if (!isNaN(page) && page >= 1 && page <= totalPages) {
+                      handlePageChange(page);
+                      setPageInput('');
+                    }
+                  }}
+                  className="h-10 px-4 rounded-lg bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 transition-colors"
+                >
+                  Go
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Total Items Count */}
           {!loading && (
@@ -686,7 +851,7 @@ function ProductComparison({
               <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-gray-500 shrink-0">ID</span>
                 <p className="text-sm font-mono bg-[#E7F1F1] px-2 py-0.5 rounded shrink-0">
-                  {product.uuid.slice(0, 8)}
+                  {product.uuid ? product.uuid.slice(0, 8) : product.node_id?.slice(0, 8) || '-'}
                 </p>
               </div>
 
@@ -736,4 +901,3 @@ function ProductComparison({
     </div>
   );
 }
-
