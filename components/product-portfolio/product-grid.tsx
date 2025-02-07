@@ -21,6 +21,7 @@ interface Product {
 const ProductCard = ({ product }: { product: Product }) => {
   const t = useTranslations("productList");
   const [imageError, setImageError] = useState(false);
+  
 
   return (
     <Card className="p-4 hover:shadow-lg transition-shadow duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
@@ -88,7 +89,7 @@ export default function ProductPortfolio() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { data: session } = useSession();
+  const session = useSession()?.data as { accessToken: string } | null;
   const router = useRouter();
 
   useEffect(() => {
