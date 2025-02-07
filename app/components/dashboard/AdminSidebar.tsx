@@ -11,6 +11,7 @@ import { UserProfile } from "@/lib/api/auth";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface User extends UserProfile {
   profile?: {
@@ -112,8 +113,19 @@ export function AdminSidebar({ currentUser, onAddUser }: AdminSidebarProps) {
         <ScrollArea className="h-[calc(100vh-280px)] lg:h-[calc(100vh-280px)]">
           <div className="space-y-2 lg:space-y-4">
             {isLoading ? (
-              <div className="flex items-center justify-center py-4 lg:py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+              <div className="space-y-4">
+                {[...Array(12)].map((_, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-2 rounded-lg"
+                  >
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="flex items-center justify-center py-4 lg:py-8">

@@ -232,7 +232,7 @@ function SidebarContent({ isMobile, onMobileClose }: { isMobile?: boolean; onMob
             <span>{n('epdPreview')}</span>
           </Link>
           <Link 
-            href="#" 
+            href="/en/dashboard/requests" 
             className={getLinkClassName('/dashboard/requests')}
           >
             <MessageSquare className="h-5 w-5" />

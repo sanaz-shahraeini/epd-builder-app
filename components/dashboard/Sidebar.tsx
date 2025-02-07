@@ -165,29 +165,21 @@ const Sidebar: React.FC<SidebarProps> = () => {
             };
 
             const nestedMatches = {
-              "/product-portfolio": pathname.startsWith("/product-portfolio"),
-              [ROUTES.DASHBOARD_ROUTES.PROJECTS]: pathname.startsWith(
-                "/en/dashboard/projects"
-              ),
-              [ROUTES.DASHBOARD_ROUTES.ADMIN]:
-                pathname === "/en/dashboard/admin" ||
-                pathname.startsWith("/en/dashboard/profile"),
-              [ROUTES.DASHBOARD_ROUTES.EPD]:
-                pathname === "/en/dashboard/epd" ||
-                pathname.startsWith("/en/dashboard/epd/"),
-              [ROUTES.DASHBOARD_ROUTES.REQUESTS]: pathname.startsWith(
-                "/en/dashboard/requests"
-              ),
+              "/product-portfolio": pathname && pathname.startsWith("/product-portfolio"),
+              [ROUTES.DASHBOARD_ROUTES.PROJECTS]: pathname && pathname.startsWith("/en/dashboard/projects"),
+              [ROUTES.DASHBOARD_ROUTES.ADMIN]: pathname && (pathname === "/en/dashboard/admin" || pathname?.startsWith("/en/dashboard/profile")),
+              [ROUTES.DASHBOARD_ROUTES.EPD]: pathname && (pathname === "/en/dashboard/epd" || pathname?.startsWith("/en/dashboard/epd/")),
+              [ROUTES.DASHBOARD_ROUTES.REQUESTS]: pathname && pathname.startsWith("/en/dashboard/requests"),
             };
 
             if (
-              pathname.startsWith("/en/dashboard/epd") ||
-              pathname.startsWith("/en/dashboard/inbox")
+              pathname && pathname.startsWith("/en/dashboard/epd") ||
+              pathname && pathname.startsWith("/en/dashboard/inbox")
             ) {
               return item.href === ROUTES.DASHBOARD_ROUTES.ADMIN;
             }
 
-            return exactMatches[item.href] || nestedMatches[item.href] || false;
+            return exactMatches[item.href as keyof typeof exactMatches] || nestedMatches[item.href as keyof typeof nestedMatches] || false;
           })();
 
           return (
