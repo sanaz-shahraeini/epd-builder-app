@@ -137,7 +137,7 @@ const ProductRow = memo(
       <Table.Cell className="px-4 py-3">
         <IconButton
           variant="ghost"
-          className="text-[#42B7B0] dark:text-[#3AA19B] hover:text-[#1B4242] dark:hover:text-[#A5D3D1]"
+          className="text-[#42B7B0] dark:text-[#3AA19B] hover:text-[#1B4242] dark:hover:text-[#A5D3D1] focus:outline-none"
         >
           <DotsVerticalIcon />
         </IconButton>
@@ -152,15 +152,15 @@ export default function ProductListComponent() {
   const t = useTranslations("productList");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProducts] = useState("All products");
-  const itemsPerPage = 10;
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
-  const [showForm, setShowForm] = useState(false);
   const [view, setView] = useState<"grid" | "list">("list");
+  const [showForm, setShowForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   // Move searchParams state to use reducer for better state management
   const [searchParams, setSearchParams] = useReducer(
@@ -209,7 +209,7 @@ export default function ProductListComponent() {
         throw new Error(`API Error (${response.status})`);
       }
 
-      const data: ApiResponse = await safeParseResponse(response);
+      const data = await safeParseResponse(response);
       setProducts(data.results);
       setTotalCount(data.count);
     } catch (error) {
@@ -220,19 +220,19 @@ export default function ProductListComponent() {
     } finally {
       setIsLoading(false);
     }
-  }, [session?.accessToken, router]);
+  }, [session?.accessToken, router, searchParams]);
 
   // Update search params when search term changes
   useEffect(() => {
-    setSearchParams({ page: 1, search: debouncedSearchTerm });
+    setSearchParams({ search: debouncedSearchTerm, page: 1 });
   }, [debouncedSearchTerm]);
 
-  // Add effect to update searchParams when currentPage changes
+  // Update searchParams when currentPage changes
   useEffect(() => {
     setSearchParams({ page: currentPage });
   }, [currentPage]);
 
-  // Update the fetch products effect
+  // Fetch products when searchParams change
   useEffect(() => {
     if (session?.accessToken) {
       fetchProducts();
@@ -244,8 +244,6 @@ export default function ProductListComponent() {
     const trimmedSearch = searchTerm.trim().toLowerCase();
     if (!trimmedSearch) return products;
     
-    // Always match from the start of product name
-    // using the exact number of characters typed
     return products.filter((product) =>
       product.product_name.toLowerCase().startsWith(trimmedSearch)
     );
@@ -295,7 +293,7 @@ export default function ProductListComponent() {
   return (
     <>
       {!showForm && (
-        <div className="top-4 right-4 flex items-center gap-2 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-2 rounded-lg">
+        <div className=" absolute top-4 right-4 flex items-center gap-2 z-50 bg-white dark:bg-black backdrop-blur-sm p-2 rounded-lg">
           <LanguageSwitcher />
           <ModeToggle />
         </div>
@@ -373,109 +371,111 @@ export default function ProductListComponent() {
             {view === "grid" ? (
               <ProductPortfolio />
             ) : (
-              <div className="bg-white dark:bg-black rounded-lg shadow-sm mt-6 overflow-x-auto">
-                <Table.Root>
-                  <TableHeader t={t} />
-                  <Table.Body>
-                    {isLoading ? (
-                      <SkeletonRows />
-                    ) : error ? (
-                      <ErrorRow
-                        key="error"
-                        error={error}
-                        onRetry={fetchProducts}
-                        t={t}
-                      />
-                    ) : filteredProducts.length === 0 ? (
-                      <EmptyRow key="empty" searchTerm={searchTerm} t={t} />
-                    ) : (
-                      filteredProducts.map((product, index) => (
-                        <ProductRow
-                          key={`product-${product.id || index}`}
-                          product={product}
-                          index={index}
+              <div className="space-y-6">
+                <div className="bg-white dark:bg-black rounded-lg shadow-sm mt-6 overflow-x-auto">
+                  <Table.Root>
+                    <TableHeader t={t} />
+                    <Table.Body>
+                      {isLoading ? (
+                        <SkeletonRows />
+                      ) : error ? (
+                        <ErrorRow
+                          key="error"
+                          error={error}
+                          onRetry={fetchProducts}
                           t={t}
                         />
-                      ))
+                      ) : filteredProducts.length === 0 ? (
+                        <EmptyRow key="empty" searchTerm={searchTerm} t={t} />
+                      ) : (
+                        filteredProducts.map((product, index) => (
+                          <ProductRow
+                            key={`product-${product.id || index}`}
+                            product={product}
+                            index={index}
+                            t={t}
+                          />
+                        ))
+                      )}
+                    </Table.Body>
+                  </Table.Root>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 md:w-10 md:h-10 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      aria-label={t("actions.previousPage")}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                    </button>
+
+                    {getVisiblePages().map((page, index) =>
+                      typeof page === "number" ? (
+                        <button
+                          type="button"
+                          key={index}
+                          onClick={() => setCurrentPage(page)}
+                          className={`p-2 md:w-10 md:h-10 rounded-lg border ${
+                            currentPage === page
+                              ? "bg-[#3AA19B] text-white border-[#3AA19B]"
+                              : "border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ) : (
+                        <span
+                          key={index}
+                          className="p-2 md:w-10 md:h-10 flex items-center justify-center text-gray-500"
+                        >
+                          {page}
+                        </span>
+                      )
                     )}
-                  </Table.Body>
-                </Table.Root>
+
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                      className="p-2 md:w-10 md:h-10 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      aria-label={t("actions.nextPage")}
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </Suspense>
-
-          {totalPages > 1 && (
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="p-2 md:w-10 md:h-10 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                aria-label={t("actions.previousPage")}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-
-              {getVisiblePages().map((page, index) =>
-                typeof page === "number" ? (
-                  <button
-                    type="button"
-                    key={index}
-                    onClick={() => setCurrentPage(page)}
-                    className={`p-2 md:w-10 md:h-10 rounded-lg border ${
-                      currentPage === page
-                        ? "bg-[#3AA19B] text-white border-[#3AA19B]"
-                        : "border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ) : (
-                  <span
-                    key={index}
-                    className="p-2 md:w-10 md:h-10 flex items-center justify-center text-gray-500"
-                  >
-                    {page}
-                  </span>
-                )
-              )}
-
-              <button
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-                className="p-2 md:w-10 md:h-10 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                aria-label={t("actions.nextPage")}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
-            </div>
-          )}
         </div>
       )}
     </>

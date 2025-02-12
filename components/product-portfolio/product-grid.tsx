@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useReducer } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Card } from "@radix-ui/themes";
@@ -24,7 +24,7 @@ const ProductCard = ({ product }: { product: Product }) => {
   
 
   return (
-    <Card className="p-4 hover:shadow-lg transition-shadow duration-200 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+    <Card className="p-4 mt-4 hover:shadow-lg transition-shadow duration-200 bg-white dark:bg-black border border-gray-200 dark:border-gray-700">
       <div className="space-y-4">
         <div className="aspect-video relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
           <Image
@@ -91,69 +91,121 @@ export default function ProductPortfolio() {
   const [error, setError] = useState<string | null>(null);
   const session = useSession()?.data as { accessToken: string } | null;
   const router = useRouter();
+  const t = useTranslations("productList");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 9; // Show 9 items per page in grid view
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      if (!session?.accessToken) return;
+  const [searchParams, setSearchParams] = useReducer(
+    (state: any, newState: any) => ({ ...state, ...newState }),
+    {
+      page: 1,
+      pageSize: itemsPerPage,
+    }
+  );
 
-      try {
-        setIsLoading(true);
-        setError(null);
+  const fetchProducts = useCallback(async () => {
+    if (!session?.accessToken) return;
 
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/products`, {
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-        });
+    try {
+      setIsLoading(true);
+      setError(null);
 
-        if (!response.ok) {
-          if (response.status === 401) {
-            router.push("/signin");
-            return;
-          }
-          
-          // Try to get error message from response
-          let errorMessage;
-          const contentType = response.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            const errorData = await response.json();
-            errorMessage = errorData.message || `API Error (${response.status})`;
-          } else {
-            const text = await response.text();
-            console.error("Non-JSON response:", text);
-            errorMessage = `API Error (${response.status})`;
-          }
-          throw new Error(errorMessage);
+      const queryParams = new URLSearchParams({
+        page_size: String(searchParams.pageSize),
+        page: String(searchParams.page),
+      });
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/products?${queryParams}`, {
+        headers: {
+          Authorization: `Bearer ${session.accessToken}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/signin");
+          return;
         }
-
-        // Verify we have JSON response
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error("API did not return JSON");
-        }
-
-        const data = await response.json();
-        if (!data || !Array.isArray(data.results)) {
-          throw new Error("Invalid data format received from API");
-        }
-
-        setProducts(data.results);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        setError(
-          error instanceof Error 
-            ? error.message 
-            : "Failed to fetch products"
-        );
-      } finally {
-        setIsLoading(false);
+        throw new Error(`API Error (${response.status})`);
       }
-    };
 
-    fetchProducts();
-  }, [session?.accessToken, router]);
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("API did not return JSON");
+      }
+
+      const data = await response.json();
+      if (!data || !Array.isArray(data.results)) {
+        throw new Error("Invalid data format received from API");
+      }
+
+      setProducts(data.results);
+      setTotalCount(data.count);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      setError(
+        error instanceof Error 
+          ? error.message 
+          : "Failed to fetch products"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [session?.accessToken, router, searchParams]);
+
+  // Update searchParams when currentPage changes
+  useEffect(() => {
+    setSearchParams({ page: currentPage });
+  }, [currentPage]);
+
+  // Fetch products when searchParams change
+  useEffect(() => {
+    if (session?.accessToken) {
+      fetchProducts();
+    }
+  }, [fetchProducts, session?.accessToken]);
+
+  const getVisiblePages = useCallback(() => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots: (number | string)[] = [];
+    let l: number | undefined;
+
+    for (
+      let i = Math.max(2, currentPage - delta);
+      i <= Math.min(totalPages - 1, currentPage + delta);
+      i++
+    ) {
+      range.push(i);
+    }
+
+    if (currentPage - delta > 2) {
+      range.unshift(1);
+    }
+    if (currentPage + delta < totalPages - 1) {
+      range.push(totalPages);
+    }
+
+    range.forEach((i) => {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1);
+        } else if (i - l !== 1) {
+          rangeWithDots.push("...");
+        }
+      }
+      rangeWithDots.push(i);
+      l = i;
+    });
+
+    return [1, ...rangeWithDots, totalPages].filter(
+      (x, i, a) => a.indexOf(x) === i
+    );
+  }, [currentPage, totalPages]);
 
   if (error) {
     return (
@@ -164,20 +216,95 @@ export default function ProductPortfolio() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-      {isLoading
-        ? Array.from({ length: 6 }, (_, index) => (
-            <SkeletonCard key={`skeleton-${index}`} />
-          ))
-        : products.map((product) => (
-            <ProductCard 
-              key={`product-${product.id || product.product_name}`} 
-              product={product} 
-            />
-          ))}
-      {!isLoading && products.length === 0 && (
-        <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
-          No products found
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {isLoading
+          ? Array.from({ length: itemsPerPage }, (_, index) => (
+              <SkeletonCard key={`skeleton-${index}`} />
+            ))
+          : products.map((product) => (
+              <ProductCard 
+                key={`product-${product.id || product.product_name}`} 
+                product={product} 
+              />
+            ))}
+        {!isLoading && products.length === 0 && (
+          <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
+            No products found
+          </div>
+        )}
+      </div>
+
+      {totalPages > 1 && (
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="p-2 md:w-10 md:h-10 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            aria-label={t("actions.previousPage")}
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          {getVisiblePages().map((page, index) =>
+            typeof page === "number" ? (
+              <button
+                type="button"
+                key={index}
+                onClick={() => setCurrentPage(page)}
+                className={`p-2 md:w-10 md:h-10 rounded-lg border ${
+                  currentPage === page
+                    ? "bg-[#3AA19B] text-white border-[#3AA19B]"
+                    : "border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                {page}
+              </button>
+            ) : (
+              <span
+                key={index}
+                className="p-2 md:w-10 md:h-10 flex items-center justify-center text-gray-500"
+              >
+                {page}
+              </span>
+            )
+          )}
+
+          <button
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+            className="p-2 md:w-10 md:h-10 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            aria-label={t("actions.nextPage")}
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
         </div>
       )}
     </div>
