@@ -6,6 +6,7 @@ import { Card } from "@radix-ui/themes";
 import { useTranslations } from "next-intl";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 
 interface Product {
   id: number;
@@ -21,7 +22,6 @@ interface Product {
 const ProductCard = ({ product }: { product: Product }) => {
   const t = useTranslations("productList");
   const [imageError, setImageError] = useState(false);
-  
 
   return (
     <Card className="p-4 mt-4 hover:shadow-lg transition-shadow duration-200 bg-white dark:bg-black border border-gray-200 dark:border-gray-700">
@@ -85,7 +85,7 @@ const SkeletonCard = () => (
   </div>
 );
 
-export default function ProductPortfolio({ searchTerm = "" }: { searchTerm?: string }) {
+const ProductPortfolio = dynamic(() => Promise.resolve(({ searchTerm = "" }: { searchTerm?: string }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -329,4 +329,6 @@ export default function ProductPortfolio({ searchTerm = "" }: { searchTerm?: str
       )}
     </div>
   );
-}
+}), { ssr: false });
+
+export default ProductPortfolio;
