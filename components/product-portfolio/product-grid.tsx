@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, useReducer } from "react";
+import React, { useState, useEffect, useCallback, useReducer, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Card } from "@radix-ui/themes";
@@ -85,7 +85,7 @@ const SkeletonCard = () => (
   </div>
 );
 
-export default function ProductPortfolio() {
+export default function ProductPortfolio({ searchTerm = "" }: { searchTerm?: string }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -102,8 +102,14 @@ export default function ProductPortfolio() {
     {
       page: 1,
       pageSize: itemsPerPage,
+      search: "",
     }
   );
+
+  // Update search params when search term changes
+  useEffect(() => {
+    setSearchParams({ search: searchTerm, page: 1 });
+  }, [searchTerm]);
 
   const fetchProducts = useCallback(async () => {
     if (!session?.accessToken) return;
@@ -115,6 +121,7 @@ export default function ProductPortfolio() {
       const queryParams = new URLSearchParams({
         page_size: String(searchParams.pageSize),
         page: String(searchParams.page),
+        ...(searchParams.search && { search: searchParams.search }),
       });
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/products?${queryParams}`, {
@@ -169,6 +176,19 @@ export default function ProductPortfolio() {
     }
   }, [fetchProducts, session?.accessToken]);
 
+  // Filter products based on search term
+  const filteredProducts = useMemo(() => {
+    const trimmedSearch = searchTerm.trim().toLowerCase();
+    if (!trimmedSearch) return products;
+    
+    const searchWords = trimmedSearch.split(/\s+/).filter(word => word.length > 0);
+    
+    return products.filter((product) => {
+      const productName = product.product_name.toLowerCase();
+      return searchWords.every(word => productName.includes(word));
+    });
+  }, [products, searchTerm]);
+
   const getVisiblePages = useCallback(() => {
     const delta = 2;
     const range = [];
@@ -222,15 +242,15 @@ export default function ProductPortfolio() {
           ? Array.from({ length: itemsPerPage }, (_, index) => (
               <SkeletonCard key={`skeleton-${index}`} />
             ))
-          : products.map((product) => (
+          : filteredProducts.map((product) => (
               <ProductCard 
                 key={`product-${product.id || product.product_name}`} 
                 product={product} 
               />
             ))}
-        {!isLoading && products.length === 0 && (
+        {!isLoading && filteredProducts.length === 0 && (
           <div className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
-            No products found
+            {searchTerm ? "No products found matching your search" : "No products found"}
           </div>
         )}
       </div>

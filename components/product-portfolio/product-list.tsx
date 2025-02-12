@@ -372,7 +372,7 @@ export default function ProductListComponent() {
 
           <Suspense fallback={<Loading />}>
             {view === "grid" ? (
-              <ProductPortfolio />
+              <ProductPortfolio searchTerm={searchTerm} />
             ) : (
               <div className="space-y-6">
                 <div className="bg-white dark:bg-black rounded-lg shadow-sm mt-6 overflow-x-auto">
