@@ -295,7 +295,7 @@ export default function ProductListComponent() {
   return (
     <>
       {!showForm && (
-        <div className="top-4 right-4 flex items-center gap-2 z-50 fixed bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-2 rounded-lg">
+        <div className="top-4 right-4 flex items-center gap-2 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm p-2 rounded-lg">
           <LanguageSwitcher />
           <ModeToggle />
         </div>
