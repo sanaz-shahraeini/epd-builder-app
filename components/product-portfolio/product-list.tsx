@@ -244,9 +244,12 @@ export default function ProductListComponent() {
     const trimmedSearch = searchTerm.trim().toLowerCase();
     if (!trimmedSearch) return products;
     
-    return products.filter((product) =>
-      product.product_name.toLowerCase().startsWith(trimmedSearch)
-    );
+    const searchWords = trimmedSearch.split(/\s+/).filter(word => word.length > 0);
+    
+    return products.filter((product) => {
+      const productName = product.product_name.toLowerCase();
+      return searchWords.every(word => productName.includes(word));
+    });
   }, [products, searchTerm]);
 
   const getVisiblePages = useCallback(() => {
@@ -311,7 +314,7 @@ export default function ProductListComponent() {
               <Box className={searchContainerStyles}>
                 <input
                   type="text"
-                  className="w-full pl-8 pr-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#A5D3D1]/50 focus:border-[#A5D3D1]/50 dark:focus:ring-[#A5D3D1]/30 dark:focus:border-[#A5D3D1]/30 dark:text-white"
+                  className="w-full pl-8 pr-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#A5D3D1]/50 focus:border-[#A5D3D1]/50 dark:focus:ring-[#A5D3D1]/30 dark:focus:border-[#A5D3D1]/30 dark:text-white"
                   placeholder={t("searchPlaceholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
